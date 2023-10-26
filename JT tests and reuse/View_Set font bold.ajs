@@ -1,0 +1,14 @@
+// Set the bold font for the selected ConceptVO
+
+console.clear();
+console.show();
+
+var theConceptVO;
+theConceptVO = $(selection).first();
+
+if( !theConceptVO.view || !theConceptVO.concept){
+    console.log("!! select a Concept VO in the current view");
+    exit();
+}
+
+theConceptVO.setFontStyle("bold");

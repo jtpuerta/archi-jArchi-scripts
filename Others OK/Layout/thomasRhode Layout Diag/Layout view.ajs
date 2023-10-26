@@ -1,0 +1,276 @@
+﻿/*
+Author: Thomas Klok Rohde
+Description: Layout ArchiMate views using ELK (Eclipse Layout Kernel) compiled to JavaScript. The current implementation does not consider edges with edges (sections). 
+WARNING: This has only been tested on Windows 10 with Edge (WebView2)
+History: 
+    October 11, 2022	: Created with base set of scripts
+*/
+
+console.show();
+console.clear();
+
+let view;
+
+const viewAsObject = {
+    visitedEdges: $("#null"),
+    visitNode: function (n) {
+        let children = [];
+        let edges = [];
+        let node = { id: n.id };
+        if ($(n).is("element")) {
+            node.width = n.bounds.width;
+            node.height = n.bounds.height;
+        }
+        // Add any ELK properties defined in object properties. They are prefixed with ":"
+        // Properties set on nodes, specifically the root view node, will overide any ELK properties defined in the dialog
+        let props = n.prop();
+        let hasprops = false;
+        let propertyElement = {};
+        props.forEach(p => {
+            let domain = p.split(":")[0];
+            if (domain == "ELK") {
+                hasprops = true;
+                propertyElement[p.split(":")[1]] = n.prop(p);
+            }
+        });
+        if (hasprops) node.properties = propertyElement;
+        // Recursively add all child elements
+        $(n).children().not("relationship").each(element => {
+            children.push(viewAsObject.visitNode(element));
+        });
+        if (children.length) node.children = children;
+        // Now, add all relationships
+        let relationships = $("#null");
+        $(n).children().not("relationship").rels().each(rel => {
+            if (rel) {
+                srcParent = $(rel.source).parent().first();
+                tgtParent = $(rel.target).parent().first();
+                if (!(srcParent.id == rel.target.id || tgtParent.id == rel.source.id) && (!relationships.contains(rel)))
+                    relationships.add(rel);
+            }
+        });
+        relationships.each(rel => {
+            if (!viewAsObject.visitedEdges.contains(rel)) {
+                edge = {
+                    id: rel.id,
+                    source: rel.source.id,
+                    target: rel.target.id
+                }
+                edges.push(edge);
+                viewAsObject.visitedEdges.add(rel);
+            }
+        });
+        if (edges.length) node.edges = edges;
+        return node;
+    },
+    create: function () {
+        view = $(selection).filter("archimate-diagram-model").add($(selection).filter("sketch-model")).add($(selection).filter("canvas-model")).first();
+        if (view) return this.visitNode(view)
+        else return undefined;
+    }
+}
+
+let viewObject = JSON.stringify(viewAsObject.create());
+if (viewObject == undefined)
+    throw new Error("No view selected");
+
+const SWT = Java.type('org.eclipse.swt.SWT');
+const FillLayout = Java.type('org.eclipse.swt.layout.FillLayout');
+const Shell = Java.type('org.eclipse.swt.widgets.Shell');
+const Browser = Java.type('org.eclipse.swt.browser.Browser');
+const ProgressAdapter = Java.extend(Java.type('org.eclipse.swt.browser.ProgressAdapter'));
+const LocationAdapter = Java.extend(Java.type('org.eclipse.swt.browser.LocationAdapter'));
+const CustomFunction = Java.extend(Java.type('org.eclipse.swt.browser.BrowserFunction'));
+const IArchiImages = Java.type('com.archimatetool.editor.ui.IArchiImages');
+const ImageFactory = Java.type('com.archimatetool.editor.ui.ImageFactory');
+
+let display = shell.getDisplay();
+
+let newShell = new Shell(display, SWT.MODAL | SWT.TITLE | SWT.ON_TOP);
+newShell.setText("Eclipse Layout Kernel");
+newShell.setLayout(new FillLayout());
+
+html = `<html>
+<title>Eclipse browser</title>
+<style>
+    *,
+    *:before,
+    *:after {
+        box-sizing: border-box;
+    }
+    input[type=text],
+    input[type=number],
+    input[type=email],
+    select {
+        padding: 5px;
+        margin: 5px 0;
+        border-radius: 5px;
+        border-width: 2px;
+        width: 100%;
+    }
+    fieldset {
+        margin: 10px;
+        border-width: 2px;
+        border-radius: 5px;
+    }
+    button {
+        margin: 10px;
+        padding: 5px;
+        width: 100px;
+    }
+</style>
+<body>
+    <fieldset>
+        <legend>Select layout options</legend>
+        <select id="algorithm" size="1" placeholder="Select layout algorithm">
+            <option value="layered">Layered</option>
+            <option value="stress">Stress</option>
+            <option value="mrtree">Mr Tree</option>
+            <option value="radial">Radial</option>
+            <option value="force">Force</option>
+            <option value="disco">Disco</option>
+            <option value="sporeOverlap">Spore Overlap</option>
+            <option value="sporeCompaction">Spore Compaction</option>
+            <option value="rectpacking">Rect Packing</option>
+        </select>
+        <select id="direction" size="1" placeholder="Select layout direction">
+            <option value="UP">Up</option>
+            <option value="DOWN">Down</option>
+            <option value="LEFT">Left</option>
+            <option value="RIGH">Right</option>
+        </select>
+        <input type="number" id="spacing" placeholder="Enter node spacing"><br>
+        <input type="number" id="layerspacing" placeholder="Enter node spacing between layers"><br>
+    </fieldset>
+    <button onclick="okPressed()">Ok</button><button onclick="cancelPressed()">Cancel</button>
+    <script type="text/javascript" src="${__DIR__ + "/lib/elk.bundled.js"}"></script>
+    <script type="text/javascript">
+        function okPressed() {
+            const graph = ${viewObject}
+            const elk = new ELK();
+            const algorithm = document.getElementById("algorithm").value;
+            const direction = document.getElementById("direction").value;
+
+            const properties = {
+                'elk.algorithm': (algorithm == "") ? "layered" : algorithm,
+                'elk.spacing.nodeNode': (document.getElementById("spacing").value == "") ? 100:parseInt(document.getElementById("spacing").value),
+                'elk.layered.spacing.nodeNodeBetweenLayers': (document.getElementById("layerspacing").value == "") ? 100:parseInt(document.getElementById("layerspacing").value),
+                'elk.direction': (direction == "") ? "DOWN" : direction
+            };
+            graph.properties = { ...properties, ...graph.properties};
+            elk.layout(graph).then(function (g) {
+                okPressedEvent(JSON.stringify(g));
+            })
+        }
+        function cancelPressed() {
+            cancelPressedEvent();
+        }
+    </script>
+</body>`;
+
+let okPressed = false;
+let cancelPressed = false;
+// let browser = new Browser(newShell, SWT.NONE);
+let browser = new Browser(newShell, SWT.EDGE);
+
+let graph = {};
+
+browser.addProgressListener(new ProgressAdapter({
+    completed: function (event) {
+        let fncOk = new CustomFunction(browser, "okPressedEvent", {
+            function: function (args) {
+                okPressed = true;
+                graph = JSON.parse(args[0]);
+            }
+        });
+        let fncCancel = new CustomFunction(browser, "cancelPressedEvent", {
+            function: function (args) {
+                cancelPressed = true;
+            }
+        });
+        browser.addLocationListener(new LocationAdapter({
+            changed: function (e) {
+                browser.removeLocationListener(this);
+                fncOk.dispose();
+                fncCancel.dispose();
+            }
+        }));
+    }
+}));
+
+// Write the HTML to a temporary file, so we are allowed to execute a local script
+let System = Java.type('java.lang.System');
+let tmpfile = System.getProperty("java.io.tmpdir") + "layout.html";
+$.fs.writeFile(tmpfile, html);
+
+browser.setUrl("file:///" + tmpfile);
+
+// Set icon to Archi icon, in case shell has a style which displays icons
+newShell.setImage(IArchiImages.ImageFactory.getImage(IArchiImages.ICON_APP));
+newShell.setSize(500, 475);
+newShell.open();
+
+while (!newShell.isDisposed() && !okPressed && !cancelPressed) {
+    if (!display.readAndDispatch()) display.sleep();
+}
+
+if (okPressed) {
+    tmpfile = System.getProperty("java.io.tmpdir") + "graph.js";
+    $.fs.writeFile(tmpfile, JSON.stringify(graph, null, 3));
+
+    console.log('Layouting done. Proceeding to apply to view.');
+    // Now, use the layout on the view
+    function layoutNode(node) {
+        object = $("#" + node.id).first();
+        if ($(object).is("element")) {
+            object.bounds = {
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height
+            };
+        }
+        let children = node.children;
+        if (children) {
+            children.forEach(c => {
+                layoutNode(c);
+            });
+        }
+        let edges = node.edges;
+        if (edges) {
+            edges.forEach(r => {
+                const edge = $("#" + r.id).first();
+                edge.deleteAllBendpoints();
+                const srcX = edge.source.bounds.x;
+                const srcY = edge.source.bounds.y;
+                const tgtX = edge.target.bounds.x;
+                const tgtY = edge.target.bounds.y;
+                const sections = r.sections;
+                if (sections) {
+                    // We don't care about junctions for now, so we assume only 1 section
+                    const section = sections[0];
+                    const bendpoints = section.bendPoints;
+                    if (bendpoints) {
+                        for (let i = 0; i < bendpoints.length; i++) {
+                            let x = bendpoints[i].x;
+                            let y = bendpoints[i].y;
+                            let bp = {
+                                startX: x - srcX,
+                                startY: y - srcY,
+                                endX: x - tgtX,
+                                endY: y - tgtY
+                            }
+                            edge.addRelativeBendpoint(bp, i);
+                        }
+                    }
+                }
+            })
+        }
+    }
+    layoutNode(graph);
+}
+
+else if (cancelPressed)
+    console.log('Dialog cancelled.')
+
+newShell.dispose();

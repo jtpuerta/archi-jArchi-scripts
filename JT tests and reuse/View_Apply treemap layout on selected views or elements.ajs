@@ -1,0 +1,33 @@
+load(__DIR__ + "lib/treemap.lib.js");
+
+
+// JTP: selection des views (et donc de tous leurs viewsElements) ou de ceertains viewElements
+//      Pour toutes les relations de "parents/enfant" sur ces viewElements (cf inclusion visuelle), un layout est opéré
+ 
+// JTP: (des)activation des dialogs - conservation des valeurs par default
+var activeDialogs = false;
+
+var padding_top = activeDialogs ? window.prompt("Set top padding (30 is the default)", 30) : 40 ;
+if (!padding_top) {
+	exit();
+} else {
+	// Workaround to convert to a number
+	padding_top *= 1;
+}
+
+var padding = activeDialogs ? window.prompt("Set internal padding (10 is the default)", 10) : 5 ;
+if (!padding) {
+	exit();
+} else {
+	// Workaround to convert to a number
+	padding *= 1;
+}
+
+var layout = activeDialogs ? window.prompt("Which layout do you want? ('auto', 'col' or 'row')", "auto") : "auto" ;
+if (!layout) {
+	exit();
+}
+
+$(selection).filter("element").add($(selection).filter("archimate-diagram-model").children("element")).each(function(e) {
+	treemap(e, {"layout": layout, "padding": padding, "padding_top": padding_top, "aspect_ratio": 1.8, "debug": false});
+});

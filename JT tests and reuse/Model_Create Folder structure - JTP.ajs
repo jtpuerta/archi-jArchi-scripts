@@ -1,0 +1,40 @@
+﻿/*
+ * Create a Folder structure in the selected Folder
+ */
+ debug = true;
+
+console.show();
+console.clear();
+console.log("> Start");
+
+var theFolderRoot = $(selection).filter("folder").first();
+if(!theFolderRoot) {
+    console.log("!! one Folder must be selected in the Model Explorer")
+    exit();
+} else {
+    debug ? console.log("theFolderRoot = " + theFolderRoot.name) : true;
+}
+
+var theFolderStruct;
+theFolderStruct = [
+    "Administration",
+    "Alimentation et Agriculture",
+    "Aménagement",
+    "Attractivité, Culture, Sport",
+    "Cohésion",
+    "Cycle de l'Eau, Mer et Littoral",
+    "Ecologie et Energie",
+    "Economie",
+    "Gestion urbaine",
+    "Habitat",
+    "Mobilité"
+];
+
+for(i = 0; i < theFolderStruct.length; i++ ){
+    debug ? console.log("- " + theFolderStruct[i]) : true;
+}
+
+for(i = 0; i < theFolderStruct.length; i++ ){
+    theFolderRoot.createFolder(theFolderStruct[i]);
+}
+console.log("> End");

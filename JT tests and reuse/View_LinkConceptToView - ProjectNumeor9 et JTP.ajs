@@ -1,0 +1,67 @@
+﻿//  
+// Link concept to View
+//  
+// 2020 David GERARD 
+//  
+// For selected concept in view, search the model for a view with the same name. 
+// If found, 
+// - create a .createViewReference() positioned in the upperleft corner of the concept, pointing to the view with the same name
+// - create a .createViewReference() positioned in the upperleft corner of the view with the same name, point to the view holding the selected concept
+// Quite useful to describe process and subprocesses, and especially with the HTML export
+//
+// No nesting for the time being; follow [Extend .createViewReference with 'autoNest' optional boolean parameter · Issue #81 · archimatetool/archi-scripting-plugin](https://github.com/archimatetool/archi-scripting-plugin/issues/81)
+//
+// Roadmap:
+// - currently the script should not be run multiple times for the same concept: it will create multiple .createViewReference(), stacked
+// 
+// Révision JTP
+
+// # Functions
+
+ 
+// # Variables  
+  
+var listVO = $(selection).filter("concept");
+
+// # Main  
+    
+console.show();  
+console.clear();  
+console.log("> Link concept to View (JTP revised):");  
+
+if( listVO.size() == 0  ||  !listVO.first().view ){
+    console.log("!! Select a ConceptVO in the view (not a relation, nor a special VO such as Note, Visual Group, ViewRef)")
+    exit();
+}
+
+listVO.each(function(theConceptVO) {
+    
+    if ($("."+theConceptVO.name).filter("archimate-diagram-model").first()!= null) {
+        var targetView = $("."+theConceptVO.name).filter("archimate-diagram-model").first() ; 
+
+        console.log("!! Concept Diag found => " + targetView.name);
+ 
+        // JTP: si le viewRef existe deja, sortie
+        if($(theConceptVO).children("diagram-model-reference").size() != 0){
+            console.log("!! viewref already exists : bounds = " 
+                     + $("#" + theConceptVO.id).children("diagram-model-reference").first().bounds);
+            exit();
+        }
+
+        // JTP : utilisation de la fonction createViewReference sur le VO (et non pas sur la View)
+        viewRef = theConceptVO.createViewReference(targetView, 0, 0, 25, 25); 
+        
+        console.log("viewRef.bounds = " + viewRef.bounds );
+
+        // JTP : desactivé pour garder les liens issus du Template de vue
+        //viewRef = targetView.createViewReference(currentConceptView, 10, 10, 30, 30); 
+    }
+    else
+    {
+        // JTP add
+        console.log("!! Concept Diag not found => A créer");
+
+    }
+});
+
+console.log("> Ending properly");

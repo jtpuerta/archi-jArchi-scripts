@@ -1,0 +1,31 @@
+﻿/*
+ * JTP : permet de naviguer sur le diagramme indiqué dans la Propriété "Diag" de l'objet selectionné
+ *       MAIS: c'est lourd:
+ *                    - pour définir lediagramme cible : il faut le aisir dans la Prop SANS se tromper
+ *                    - pour lancer la navigation : il faut cliquer sur le boutton "run" (après avoir sélectionné le script)
+ *                    - cela ne marche que si le nom du Diag est unique
+ *
+ *      VOIR l'alternative : https://gist.github.com/projetnumero9/3301cfb99d8747c79a8bd6e0edcec32e
+ */
+console.clear();
+
+var myElem = $(selection);
+if (!myElem) {
+    exit();
+}
+
+var myDiagName = myElem.first().prop("Diag");
+if (!myDiagName) {
+    exit();
+}
+
+console.log(myElem.first().name + " => " + myDiagName);
+
+var myViewName = "." + myDiagName;
+var myView = $("archimate-diagram-model").filter(myViewName).first();
+if (!myView) {
+    exit();
+}
+
+myView.openInUI();
+

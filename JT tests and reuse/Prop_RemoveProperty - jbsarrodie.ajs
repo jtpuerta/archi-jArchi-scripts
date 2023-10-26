@@ -1,0 +1,7 @@
+﻿// impossible (par l'IHM de Archi v5.1) de supprimer les properties de plusieurs objets selectionnés 
+// donc ce script est util ;-)
+
+var propName = window.prompt("Which property do you want to remove (leave empty to cancel)?", "");
+if (propName) {
+	$(selection).removeProp(propName);
+}

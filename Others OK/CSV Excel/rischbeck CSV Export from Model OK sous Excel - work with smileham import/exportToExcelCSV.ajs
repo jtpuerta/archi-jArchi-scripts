@@ -1,0 +1,149 @@
+﻿/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+Script Name: exportToExcelCSV
+Purpose:     Export all elements from the current model (including their properties) to a CSV file which
+             can be opened in Excel. This also works for special characters and for German locale. 
+             Export uses latin encoding and replaces some characters so that Excel can directly open the CSV 
+             (double-click).
+             
+             This works in conjunction with smileham's importFromCSV to reimport changes (but doesn't require PapaParse),
+             see https://gist.github.com/smileham/1e57a5946235e780dee5a824f664aa3d
+
+Thomas Rischbeck, rischbeck@itmc.ch, (C) ITMC 2021
+
++++ JTP addition : manage specialization to enamble import from smileham
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+var headerInput = [];
+headerInput.push("Name");
+headerInput.push("Documentation");
+headerInput.push("UID");
+headerInput.push("Type");
+headerInput.push("Specialization");
+
+var fileOutString = '';
+
+console.show();
+console.clear();
+
+// get the model name from the first element
+//var modelName= $("element").first().model.
+var modelName = "" + model.name;
+console.log("model name ", modelName);
+
+// contains a list of all individual property names within the model (note: no support for multiple properties wit hthe same name!)
+var propertiesList = [];
+
+// Iterate through ALL model elements and collect all inidividual properties
+// note: this cannot handle multiple properties with the same name currently! !!!!!!!!!!!
+
+$("element").each(function(element) {
+    // get all the properties of this object 
+    var theProperties = element.prop();  
+    
+    for (var i=0; i<theProperties.length; i++){
+        var found = false;
+        for (var j=0; j<propertiesList.length; j++) {
+            if (propertiesList[j]==theProperties[i]) {
+                found=true;
+            }
+        }
+        if (!found) {
+            console.log("adding property ", theProperties[i])
+            propertiesList.push(theProperties[i]);
+            headerInput.push(theProperties[i]);
+        }
+    }
+});
+
+
+writeStringToFile(createCsvHeader(headerInput));
+
+for (var i=0; i<propertiesList.length; i++) {
+    console.log("property ", i, " = ", propertiesList[i]);
+}
+
+// Iterate through ALL model elements, see https://github.com/archimatetool/archi-scripting-plugin/wiki/jArchi-Collection
+$("element").each(function(element) {
+    
+    // create a dummy record for this element
+    //var record = createCsvString(element.name, element.documentation, element.id, element.type); 
+    var record = "";
+    record = record + element.name + ";" ;
+    record = record + escapeTextFields(element.documentation) + ";";
+    record = record + element.id + ";";
+    record = record + element.type + ";";
+    //record = record + !element.specialization ? "?" : element.specialization;
+    if (element.specialization) {
+        record = record + element.specialization;
+    } 
+
+    // now add all the element values at the right position
+    // check if the element has a list within the properties list, otherwise write ';'
+    for (var i=0; i<propertiesList.length; i++){
+        if (element.prop(propertiesList[i])) {
+            record = record + ";" + escapeTextFields( element.prop(propertiesList[i]));
+        }
+        else 
+        {
+            record = record + ";"; 
+        }
+    }
+
+    writeStringToFile(record); 
+    //writeStringToFile(createCsvString(element.name, element.documentation, element.id, element.type)); 
+   
+});
+
+
+
+ // Open a dialog to let the user choose where to save the generated file
+ var defaultFileName = "Export_Model_" + modelName + ".csv" ; 
+ //var defaultFileName = "Export_Model.csv" ; 
+ var exportFile = window.promptSaveFile({ title: "Export to CSV", filterExtensions: [ "*.csv" ], fileName: defaultFileName } );
+
+ // replace the UTF-16 BOM 
+// res = res.replace(/^\uFEFF/gm, "");
+
+ //replace this with utf-16 or utf-16le
+ //with CH-DE locale and Excel2016 I got good results with latin encoding
+ $.fs.writeFile(exportFile, fileOutString, 'latin1');
+
+ console.log(">>> export done to file " + exportFile);
+ 
+
+// escape/change critical characters in text fields, enclose in '"' quotes
+function escapeTextFields(fieldContent) {
+	var detailString = "";
+
+    //replace single quote with double quotes
+    var docx =  fieldContent.replace(/"/g, "\"\"");
+
+    // remove bullets with asterisk (also better for MD export)
+    var docx2 =  docx.replace(/•/g, "*");
+
+    var docx2 =  docx2.replace(/–/g, "--");
+    
+    detailString = "\"" + docx2 + "\"";
+    return detailString;
+}
+
+function createCsvHeader(headerInput) {
+    var headerString = "";
+    for (var i=0 ; i < headerInput.length ; i++) {
+        // last entry without trailing semicolon
+        if (i == headerInput.length-1) {
+            headerString += headerInput[i];
+        } else {
+            headerString += headerInput[i] + ";";
+        }
+
+    }
+    return headerString;
+}
+
+
+function writeStringToFile(inputString) {
+    fileOutString += inputString + '\r\n';
+}

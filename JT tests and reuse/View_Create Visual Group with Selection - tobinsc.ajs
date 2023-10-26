@@ -1,0 +1,75 @@
+﻿// 
+// Author: Ed Tobin
+// Purpose: Create Visual Group with Selection
+// Requires: jArchi - https://www.archimatetool.com/blog/2018/07/02/jarchi/
+// Date: 14 April 2023
+//
+// WARNING: drops visual relationships between selected objects
+
+// configure defaults:
+// the size of padding around the selected elements
+// default name for the group
+// default border style
+
+padding = 30;
+defname = "group";
+defborder = BORDER.RECTANGLE; // BORDER.TABBED
+
+minY = null;
+minX = null;
+maxY = null;
+maxX = null;
+
+var view = $(selection).first().view;
+
+
+// Determine the corner coordinates around the selected elements
+// many thanks to robkamp --
+// https://gist.github.com/robkamp/fac2b2d80ee44e7085c70738de544341
+
+$(selection).each(function(element) {
+
+    // top left (lX,lY) and lower right (mX, mY)
+    lX = element.bounds.x;
+    lY = element.bounds.y;
+    mX = lX + element.bounds.width;
+    mY = lY + element.bounds.height;
+
+    minY = Math.min(lY,minY==null?lY:minY);
+    minX = Math.min(lX,minX==null?lX:minX);
+    maxY = Math.max(mY,maxY==null?mY:maxY);
+    maxX = Math.max(mX,maxX==null?mX:maxX);
+   
+});
+
+// calculate bounding box for group
+boxX = minX - padding;
+boxY = minY - padding;
+boxWidth = (maxX - minX) + (2 * padding);
+boxHeight = (maxY - minY) + (2 * padding);
+
+// create visual group on diagram
+var bbGroup = view.createObject("diagram-model-group",
+				boxX, boxY,
+				boxWidth, boxHeight, true);
+bbGroup.name = defname;
+bbGroup.borderType = defborder;
+
+// Nest selection inside newly created group (diagram-model-group)
+//
+// Many thanks to --
+// https://github.com/archimatetool/archi-scripting-plugin/issues/108#issuecomment-1235584595
+// https://forum.archimatetool.com/index.php?topic=1284.msg6756#msg6756
+
+$(selection).each(function(element) {
+    
+    // offset to group frame of reference
+    posX = element.bounds.x - boxX;
+    posY = element.bounds.y - boxY;
+    
+    // use the add method, requires the element concept
+    bbGroup.add(element.concept,
+		posX, posY,
+		element.bounds.width, element.bounds.height);
+    element.delete();    
+});

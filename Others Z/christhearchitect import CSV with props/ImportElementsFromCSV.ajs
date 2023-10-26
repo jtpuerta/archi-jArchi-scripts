@@ -1,0 +1,115 @@
+﻿/*
+ * This script reads a CSV file with the following columns: Name, Type, Documentation, {<property-name>}. Each row represents one element along with its main attributes,  
+ * and is loaded into the current model according to these rules:
+ * -- if the element (defined by the Name/Type pair) exists in the current model, its Documentation and properties are updated (subject to "overwriteAttributes" and "blankMeansDontChange" below)
+ * -- if not, a new element is created (along with its Documentation and properties)
+ * -- the Name field is mandatory, but Type and Documentation can be empty
+ * -- the script does not create any views or visual diagram objects for the imported elements; therefore, it cannot load any visual attributes, such as style or label""
+ * 
+ * Author: christhearchitect
+ * Version: 0.2
+ * 
+ * (credits: some code from https://gist.github.com/smileham/1e57a5946235e780dee5a824f664aa3d used to import from CSV )
+ * 
+ */
+ 
+
+console.clear(); 
+console.log("ImportElementsFromCSV\n---------------------\n");
+
+// Constants: change them to suit your needs
+
+var headerColumns        = ["Name","Type","Documentation"]; // will be checked agains actual CSV
+var addSourceProp        = true;                            // if true, property "Source = <filename>" will be added to every element
+var overwriteAttributes  = true;                            // if an element already exists, its Documentation and Properties attributes in the CSV will overwrite those in the model
+var blankMeansDontChange = true;                            // when updating attributes, blank ("") attributes are left unchanged even if overwriteAttributes is true
+
+var debug = false;
+
+// End of Constants
+
+
+var newElemCount = 0;
+var updElemCount = 0;
+
+
+//TBD: check that current model is defined
+
+load(__DIR__ + "lib/papaparse.min.js");
+debug?console.log("// Loaded library: PapaParse"):null;
+
+var filePath = window.promptOpenFile({ title: "Open CSV file", filterExtensions: ["*.CSV"], fileName: "" });
+
+if (filePath) {
+    var fileName = filePath.replace(/^.*(\\|\/|\:)/, '');
+    var FileReader = Java.type("java.io.FileReader");
+    var Types = Java.type("java.nio.charset.StandardCharsets");
+    var theCSVFile = new FileReader(filePath,Types.UTF_8);
+
+    var theCSV ="";
+    
+    var data = theCSVFile.read();
+    debug?console.log("// Loading file"):null;
+    while(data != -1) {
+        var theCharacter = String.fromCharCode(data);
+        theCSV+=theCharacter;
+        data = theCSVFile.read();
+    }
+    theCSVFile.close();
+    console.log("> CSV file loaded");
+
+    theDataFile = Papa.parse(theCSV);
+    theData = theDataFile.data;
+    console.log("> Parsing Complete");
+
+    debug?console.log("// Actual CSV header: '"+theData[0].slice(0,headerColumns.length)+"' / Expected header: '"+headerColumns+"'"):null;
+
+    if (theData[0].slice(0,headerColumns.length).toString()==headerColumns.toString()) {
+        // Header matches the expected columns
+        for (i=1; i<theData.length; i++) {
+            // Iterate over each data row and create the corresponding new elements
+            debug?console.log("// Read from CSV",i,theData[i],theData[i][0].length==0?"(skipping)":"(processing)"):null;
+            if (theData[i][0].length>0) {
+                var theName = theData[i][0];
+                var theType = theData[i][1];
+                var objElem = $("."+theName).filter("element").filter(theType); 
+                debug?console.log("// Found in model:", objElem):null;
+                if (objElem.length==0) {
+                    // Element not found in current model: create it
+                    debug?console.log("// Creating element"):null;
+                    var newElem = model.createElement(theType, theName);
+                    if (addSourceProp) {newElem.prop("Source","CSV import from '"+fileName+"'")};
+                    newElemCount++;
+                };
+                if (objElem.length==0 || overwriteAttributes){
+                    objElem = newElem;
+                    // Set documentation attribute
+                    if (theData[i][headerColumns.length-1]!=="" && blankMeansDontChange) {
+                        debug?console.log("//     Skipping blank documentation"):null;
+                    } else {
+                        debug?console.log("//     Setting documentation =",theData[i][headerColumns.length-1]):null;
+                        objElem.documentation = theData[i][headerColumns.length-1];
+                    }
+                    for (p=headerColumns.length; p<theData[i].length; p++) {
+                        // Set any properties defined in the CSV (skip if the column header is "")
+                        if (theData[0][p].length>0) {
+                            if (theData[i][p]=="" && blankMeansDontChange) {
+                                debug?console.log("//     Skipping blank property",theData[0][p]):null;
+                            } else {  
+                                debug?console.log("//     Setting property "+theData[0][p]+" = '"+theData[i][p]+"'"):null;
+                                objElem.prop(theData[0][p],theData[i][p]);
+                            }
+                        }
+                    }
+                    updElemCount++; // note that new relationships are also counted here -- we'll correct this further down the line
+                }
+            }
+        }
+        updElemCount -= newElemCount; // Because of the above if/else sequence, uprElemCount was also incremented after a new relationship was created
+        console.log("\n>", newElemCount, "new elements created\n>", updElemCount, "existing elements "+(overwriteAttributes?"updated":"skipped"));
+    } else {
+        console.log("> Error: the header in", "'"+filePath+"' does not match expected columns "+headerColumns);
+    }
+} else {
+    console.log("> Cancelled");
+}

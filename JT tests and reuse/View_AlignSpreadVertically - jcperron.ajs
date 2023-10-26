@@ -1,0 +1,40 @@
+﻿// Author: Jean-Charles Perron base on the work of Rob Kamp
+// Requires: jArchi - https://www.archimatetool.com/blog/2018/07/02/jarchi/
+// Purpose: Align to lowest, spread the selected elements vertically, and resize to be equal size 
+// Date: 2023-09-11
+// Version 1.0
+// Change: Initial version
+// Source : https://gist.github.com/robkamp/fac2b2d80ee44e7085c70738de544341
+
+console.log("Start: Spread and Align vertically");
+
+minY = null;
+minX = null;
+maxWidth = 0;
+maxHeight = 0;
+
+// Determine the width, height,  and 
+$(selection).each(function(element) {
+    minY = Math.min(element.bounds.y,minY==null?element.bounds.y:minY);
+    minX = Math.min(element.bounds.x,minX==null?element.bounds.x:minX);
+    maxWidth = Math.max(element.bounds.width,maxWidth);
+    maxHeight = Math.max(element.bounds.height,maxHeight);
+});
+
+// Sort the selection so the order stays the same
+$(selection).sort(function (top,bottom) {
+    return top.bounds.y-bottom.bounds.y;
+});
+
+// Walk throught the sorted selection
+$(selection).each(function (element) {
+    
+    // Set the new bounds
+    element.bounds = {x: minX, y: minY, width: maxWidth, height: maxHeight};
+
+    // Set the spacing for the next element
+    minY = minY + maxHeight + 10;
+
+}); 
+
+console.log("End: Spread and Align vertically");

@@ -1,0 +1,12 @@
+﻿// Batch creating or updating properties.
+//
+// (c) 2020 David Sara
+
+var key = window.prompt("Please enter the property key", "");
+var value = window.prompt("Please enter the property value", "");
+
+$(selection).each(function (obj) {
+    obj.prop(key, value);
+});
+
+console.log("Done");

@@ -1,0 +1,39 @@
+﻿/*
+ * Logs all Archi objects in the current selection to the console, in tree format.
+ * For each object, we list its type and name (which may be empty), plus all of its properties, if any (prefixed by "+").
+ * Author: christhearchitect, 2022
+ * Version: 0.2
+ */
+ 
+console.clear(); 
+console.log("ListAllObjectsInSelection\n-------------------------\n");
+
+var count = 0;
+
+
+function listObj (obj,lev) {
+    // Recursively traverse the selection, and log the content of each "obj" to the console
+    // ("lev" is the recursion level and is used only for indentation purposes)
+    var indent = "    ".repeat(lev);
+    console.log(indent+obj.type+":"+obj.name);
+    count += 1;
+    var propkeys = obj.prop();
+    for (i=0; i<propkeys.length; i++) {
+        // log all of obj's properties (if any) to the console
+        // NB: properties are just a list, they are not part of the tree
+        console.log(indent+"+ "+propkeys[i]+" = '"+obj.prop(propkeys[i])+"'");
+        count += 1;
+    };
+    $(obj).children().each(function(o){
+        // Traverse all children of the current "obj"
+        listObj(o,lev+1);       
+    });
+};
+
+console.log("Selection:",selection,"\n");
+
+for (s=0; s<selection.length; s++){
+    listObj(selection[s],0);
+};
+
+console.log("\nCount:",count);

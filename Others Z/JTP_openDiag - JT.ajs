@@ -6,6 +6,7 @@
  *                    - cela ne marche que si le nom du Diag est unique
  *
  *      VOIR l'alternative : https://gist.github.com/projetnumero9/3301cfb99d8747c79a8bd6e0edcec32e => mis en oeuvre
+ *
  */
 console.clear();
 

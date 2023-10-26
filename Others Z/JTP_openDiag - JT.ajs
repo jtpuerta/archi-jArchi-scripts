@@ -1,7 +1,7 @@
 ﻿/*
  * JTP : permet de naviguer sur le diagramme indiqué dans la Propriété "Diag" de l'objet selectionné
  *       MAIS: c'est lourd:
- *                    - pour définir lediagramme cible : il faut le aisir dans la Prop SANS se tromper
+ *                    - pour définir lediagramme cible : il faut le saisir dans la Prop SANS se tromper
  *                    - pour lancer la navigation : il faut cliquer sur le boutton "run" (après avoir sélectionné le script)
  *                    - cela ne marche que si le nom du Diag est unique
  *

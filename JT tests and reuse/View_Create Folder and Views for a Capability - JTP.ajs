@@ -19,16 +19,19 @@ var theViewUsage;
 
 // la selection doit se faire sur un VO, dans une Vue
 theConceptVO = $(selection).filter("capability").first();
-theView = theConceptVO.view;
 
 // theConceptVO doit être une Capability
-if(!theConceptVO || !theView) {
+if(!theConceptVO ) {
     console.log("!! one capability (VO) must be selected in the current view")
     exit();
-} else {
-    debug ? console.log("theConceptVO = " + theConceptVO.bounds) : true;
-    debug ? console.log("theView = " + theView.name) : true;
 }
+theView = theConceptVO.view;
+if(!theView) {
+    console.log("!! one capability (VO) must be selected in the current view")
+    exit();
+}
+debug ? console.log("theConceptVO = " + theConceptVO.bounds) : true;
+debug ? console.log("theView = " + theView.name) : true;
 
 // theConcept correspondant à theConceptVO doit être bien classé: dans un folder/folder de "Strategy"
 theConcept = theConceptVO.concept;

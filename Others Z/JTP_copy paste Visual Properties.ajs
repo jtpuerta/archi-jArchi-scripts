@@ -9,7 +9,7 @@ var debug = true;
 console.clear();
 console.show();
 
-// select a concept VO    - TODO : vérifier qu'il s'agit d'un VO => il a une view
+// select a concept VO    - TODO : vérifier qu'ils s'agit de VO => ils doivent avoir une view ET un concept
 var  theConceptVOs = $(selection).filter("element");
 
 debug ? console.log(theConceptVOs) : true;

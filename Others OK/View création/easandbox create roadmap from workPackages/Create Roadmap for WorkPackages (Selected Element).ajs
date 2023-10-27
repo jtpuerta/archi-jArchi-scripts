@@ -1,0 +1,191 @@
+﻿/*
+ * Create Roadmap for WorkPackages (Selected Element).ajs
+ *===========================================================================================================================
+ * Owen Richardson 2023-01-06
+ * Version 1.01: Updated to have better error checking.
+ * Version 1.02: Modified the date line code so it can do more than a year if needed.
+ * Version 1.03: Bugfix of the grid, and add of showGrid for switching grids on and off
+ * Version 2.00: Major overhaul
+ *					* Completely overhauled the calculation logic
+ *					* Made this script run on a selection rather than the whole model.
+ *					* If a project status is discontinued it does not display it
+ * 
+ * This creates a simple roadmap view in the current model, which iterates through all the work packages and adds them to 2023.
+ * Theres some scope for later improvement
+ * 
+ * For more info see https://easandbox.wordpress.com/2023/01/06/building-a-roadmap-in-jarchi/
+ */
+
+//variables for dates
+var todayDate = new Date().toISOString().slice(0, 10); //get todays date formatted YYYY-MM-DD
+var thisYear = new Date().getFullYear(); //this year!
+var startOfYear = new Date(thisYear, 0, 1, 1, 0, 0, 0).getTime(); //get january 1st of this year.
+var endOfYear = new Date(thisYear, 11, 31, 23, 59, 59, 999).getTime();//end of year in 2 years
+var baseDate = new Date(startOfYear); //variable for date math when generating the date timeline
+
+
+//variables for graphics
+var leftPadding = 10; //number of pixels for left padding
+var topPadding = 10; //number of pixels for top padding
+var monthWidth = 120; //the size of each month on the roadmap
+var projectHeight = 20; //the height of each work package
+var projectSpacer = 2; //pixels between each package
+var projectTextSize = 7; //size of the work package text
+var oneTick = 0; //its the value for aligning scales
+var showGrid = true; // shows the lines going down so you can see which months the project are in.
+
+//where we will store our work packages
+var elementList = [];
+
+// Simple function to take a number and turn it into month name. There are other ways to do this in Javascript,
+// but i couldnt find one that worked.
+function getMonthName(monthNumber) {
+	const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+	return month[monthNumber - 1];
+}
+
+//Sorts an array of objects by the property specified in strKey
+function bubbleSortElement(arr, strKey) {
+
+	let swapped;
+	do {
+		swapped = false;
+		for (let i = 0; i < arr.length - 1; i++) {
+			if (new Date(arr[i].prop(strKey)) > new Date(arr[i + 1].prop(strKey))) {
+				var temp = arr[i];
+				arr[i] = arr[i + 1];
+				arr[i + 1] = temp;
+				swapped = true;
+			}
+		}
+	} while (swapped);
+	return arr;
+
+}
+
+function daysInMonth(month, year) { return new Date(year, month, 0).getDate(); } 
+
+//calculate grid location for a date
+function gridLoc(strdate)
+{
+	var gdate = new Date(strdate);
+	var sdate = new Date(startOfYear);
+	var edate = new Date(endOfYear);
+	var cx = 0;
+
+	if (gdate > edate)
+		gdate = new Date(edate.setDate(edate.getDate()+3));
+
+	var mc = gdate.getMonth() - sdate.getMonth() + (12 * (gdate.getFullYear() - sdate.getFullYear()));
+
+	if (mc < 0) return 0;
+	// if the month started before the grid on this view then we know the start point is before our grid...
+	// in which case - we start at zero - so you can see easier where projects started before the year begins
+
+	//to get to the right month location, we need to hop across the number of months to get to the first of the month.
+	cx = leftPadding + (mc*monthWidth);
+
+	var days = daysInMonth(gdate.getMonth() + 1, gdate.getFullYear());
+	var scale = monthWidth / days;
+	cx = cx + (scale * (gdate.getDate()-1));
+
+	return cx;
+}
+
+//let people know we are doing this in the console
+console.log("Creating A roadmap from your selection...");
+
+//Create the view
+var archimateView = model.createArchimateView(todayDate + ": My Roadmap (selected)");
+
+var countDate = baseDate;
+var i = 0;
+var finished = false;
+while (!finished)
+{
+	if (countDate.getMonth() == 0) //is january so put the year number here. 
+	{
+		var yearNote = archimateView.createObject("note", leftPadding + (i * monthWidth), topPadding, 100, 30);
+		yearNote.borderType = BORDER.NONE;
+		yearNote.fontStyle = "bold";
+		yearNote.setText(countDate.getFullYear().toString());
+		yearNote.fontSize = 14;
+	}
+	//create the block for the month
+	var note = archimateView.createObject("note", leftPadding + (i * monthWidth), topPadding + 30, monthWidth, 30);
+	note.borderType = BORDER.RECTANGLE;
+	note.fontStyle = "bold";
+	note.setText(getMonthName((i % 12) + 1)); //modulus of 12 gives us a value of 0-11
+
+	//add one to the current month date
+	new Date(countDate.setMonth(countDate.getMonth()+1));
+
+	if (countDate.getTime() >= endOfYear) finished = true; //check to see if we are done
+	i++;
+}
+
+var monthCount = i;
+oneTick = ((endOfYear - startOfYear) / (monthWidth * monthCount)); //i is the number of months in total between beginning and end dates.
+
+//putting all the work package elements from this model into an array, so we can sort them.
+$(selection).filter("work-package").each(function (workpackage) {
+	//some sanitation - we will only add if there is a start and end
+	if (workpackage.prop("Start Date") != null && workpackage.prop("End Date") != null && workpackage.prop("Project Status") != "Discontinued") {
+		//want to make sure the start date can be converted to time
+		var ts = new Date(workpackage.prop("Start Date")).getTime();
+		var te = new Date(workpackage.prop("End Date")).getTime();
+		if (!isNaN(ts) && !isNaN(te)) // if it is not not a number!
+		{
+			elementList.push(workpackage);
+		}
+		else
+			console.log("ERROR: The start or end date could not be turned into a date by the system - Threw out " + workpackage)
+	}
+	else
+		console.log("ERROR: Missing Start/End dates, or its discontinued - Threw out " + workpackage);
+});
+
+//sorting the elementList Array by the property start date. The sort is string based which works because my date format
+//is YYYY-MM-DD.
+var sortedList = bubbleSortElement(elementList, "Start Date");
+
+
+//Displays the grid seperating the months
+
+if (showGrid) {
+	for (var j = 0; j < monthCount; j++) {
+		var boundry = archimateView.createObject("note",
+			leftPadding + (j * monthWidth), //x
+			topPadding + 60,				//y
+			monthWidth,						//width
+			10 + ((sortedList.length+1) * (projectHeight + projectSpacer)) //Height  
+		);
+		boundry.borderType = BORDER.RECTANGLE;
+	}
+}
+
+
+var count = 0; //count how many elements we have going down.
+
+for (var i = 0; i < sortedList.length; i++) {
+
+		var wp = sortedList[i]; //lazy. shortcutting having to type sortedList[i] in the inner code.
+		var elementStart = new Date(wp.prop("Start Date")).getTime();
+		var elementEnd = new Date(wp.prop("End Date")).getTime();
+	
+		if (elementEnd >= startOfYear && elementStart <= endOfYear) {
+			if (elementStart < startOfYear) elementStart = startOfYear;
+			if (elementEnd > endOfYear) elementEnd = endOfYear;
+
+			var calcY = parseInt(topPadding + 66 + (count * (projectHeight + projectSpacer)));
+
+			var calcX=gridLoc(wp.prop("Start Date"));
+			var calcW = gridLoc(wp.prop("End Date"))-calcX;
+
+			var o = archimateView.add(wp.concept, calcX, calcY, calcW, projectHeight);
+			o.fontSize = projectTextSize;
+			o.textPosition = TEXT_POSITION.CENTER;
+			count++;
+		}
+
+}

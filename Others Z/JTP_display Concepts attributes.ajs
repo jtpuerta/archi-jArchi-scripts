@@ -11,15 +11,14 @@ var theCurrentVisualObject = $(selection).filter("element").first();
 if(!theCurrentVisualObject){
     console.log("!! sélectionner un objet concept");
     exit();
-}else{
-    console.log("theCurrentVisualObject : " + theCurrentVisualObject);
-    console.log("                         id = " + theCurrentVisualObject.id);
-    console.log("                         bounds = " + theCurrentVisualObject.bounds);
 }
+
+console.log("theCurrentVisualObject : " + theCurrentVisualObject);
+console.log("                         bounds = " + theCurrentVisualObject.bounds);
+console.log("                         fontColor = " + theCurrentVisualObject.fontColor);
 
 var theCurrentConcept = theCurrentVisualObject.concept;
 console.log("theCurrentConcept : " + theCurrentConcept);
-console.log("                    id = " + theCurrentConcept.id);
 
 var theCurrentView =  theCurrentVisualObject.view;
 console.log("theCurrentView = " + theCurrentView);

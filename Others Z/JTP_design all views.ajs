@@ -1,0 +1,20 @@
+﻿/*
+ * Enable to apply a common visual design on all views of the model
+ *
+ */
+ 
+var debug = true;
+console.clear();
+console.show();
+
+theConceptVOs = $("view").find("element");
+theConceptVOs.each( c => {
+    c.gradient = GRADIENT.TOP;
+});
+
+theViewRefs = $("view").find("diagram-model-reference");
+theViewRefs.each( v => {
+    v.fontColor = "#0000ff";    // bleu vif
+});
+
+

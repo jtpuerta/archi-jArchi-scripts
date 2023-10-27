@@ -1,0 +1,75 @@
+﻿/*
+ * copy / paste the Visual properties of an element VO on the other elements selected
+ *
+ * Rq: the collection of selected element is not sorted 
+ *     so it is necessary to ask which element is the source of the copy
+ */
+
+var debug = true;
+console.clear();
+console.show();
+
+// select a concept VO    - TODO : vérifier qu'il s'agit d'un VO => il a une view
+var  theConceptVOs = $(selection).filter("element");
+
+debug ? console.log(theConceptVOs) : true;
+
+var i = 1;
+var theDialogText = "";
+theConceptVOs.each( c => {
+    theDialogText = theDialogText + i + " : " + c.name + "\n";
+    i++;
+})
+debug ? console.log( theDialogText ) : true;
+
+var j = window.prompt("Please select one object to copy VO from : \n" + theDialogText);
+if( !j ) exit();
+
+debug ? console.log( "Selected object = " + theConceptVOs.get( j - 1) ) : true;
+
+// copy the VO prop from the selected object
+var so = theConceptVOs.get( j - 1);
+var vp_borderType = so.borderType;
+var vp_figureType = so.figureType ;
+var vp_fillColor = so.fillColor ;
+var vp_fontColor = so.fontColor ;
+var vp_fontName = so.fontName ;
+var vp_fontSize = so.fontSize ;
+var vp_fontStyle = so.fontStyle ;
+var vp_iconColor = so.iconColor ;
+var vp_imageSource = so.imageSource ;
+var vp_imagePosition = so.imagePosition ;
+var vp_gradient = so.gradient ;
+var vp_labelExpression = so.labelExpression ;
+var vp_lineColor = so.lineColor ;
+var vp_opacity = so.opacity ;
+var vp_outlineOpacity = so.outlineOpacity ;
+var vp_showIcon = so.showIcon ;
+var vp_textAlignment = so.textAlignment ;
+var vp_textPosition = so.textPosition ;
+
+// to the other objects
+theOtherVOs = theConceptVOs.not(so);
+theOtherVOs.each( c => {
+    c.borderType = vp_borderType;
+    c.figureType = vp_figureType;
+    c.fillColor = vp_fillColor;
+    c.fontColor = vp_fontColor;
+    c.fontName = vp_fontName;
+    c.fontSize = vp_fontSize;
+    c.fontStyle = vp_fontStyle;
+    c.iconColor = vp_iconColor;
+    c.imageSource = vp_imageSource;
+    c.imagePosition = vp_imagePosition;
+    c.gradient = vp_gradient;
+    c.labelExpression = vp_labelExpression;
+    c.lineColor = vp_lineColor;
+    c.opacity = vp_opacity;
+    c.outlineOpacity = vp_outlineOpacity;
+    c.showIcon = vp_showIcon;
+    c.textAlignment = vp_textAlignment;
+    c.textPosition = vp_textPosition;
+})
+
+
+

@@ -12,5 +12,6 @@ if( !theConceptVO.view || !theConceptVO.concept){
 }
 
 $(selection).each( c =>{ 
-    c.setFontStyle("bold");
+    if(c.fontStyle == "normal") c.setFontStyle("bold");
+    if(c.fontStyle == "bold") c.setFontStyle("normal");    
 })

@@ -1,4 +1,6 @@
-// Set the bold font for the selected ConceptVO
+// Set/unset the bold font for the selected ConceptVO
+
+var debug = true;
 
 console.clear();
 console.show();
@@ -12,6 +14,12 @@ if( !theConceptVO.view || !theConceptVO.concept){
 }
 
 $(selection).each( c =>{ 
-    if(c.fontStyle == "normal") c.setFontStyle("bold");
-    if(c.fontStyle == "bold") c.setFontStyle("normal");    
+    debug ? console.log (c.fontStyle) :true;
+    if(c.fontStyle == "normal"){
+         c.fontStyle = "bold";
+    }
+    else {
+        c.setFontStyle("normal"); 
+    }   
+    debug ? console.log (c.fontStyle) :true;
 })

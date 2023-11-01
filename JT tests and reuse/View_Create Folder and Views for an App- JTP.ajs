@@ -52,19 +52,16 @@ if(theFolder){
 }else{
     console.log("> The Folder does not exist");
 
-    // Création du Folder et des 2 views:  ViewDetail et ViewUsage
+    // Création du Folder et de la view  ViewDetail 
     theFolder = $("folder.Views").first().createFolder(theConceptVO.name);
     theViewDetail = model.createArchimateView("Default",theFolder);
     theViewDetail.name = "Detail";
-    theViewUsage = model.createArchimateView("Default",theFolder);
-    theViewUsage.name = "Usage"
-    debug ? console.log("theFolder and the 2 views are created") : true;
+    debug ? console.log("theFolder and the view are created") : true;
 
     // Ajout du viewRef vers "TOC"
     var theTocView = $(".TOC").filter("archimate-diagram-model").first() ;
     var theTocViewRef1 = theViewDetail.createViewReference(theTocView, 10, 10, 70, 25);
-    var theTocViewRef2 = theViewUsage.createViewReference(theTocView, 10, 10, 70, 25);
-    debug ? console.log("theTocViewRef are created") :  true;
+     debug ? console.log("theTocViewRef are created") :  true;
 
     // Ajout du viewRef vers "Map des Applications"
     var theMapView = $(".Map des Applications").filter("archimate-diagram-model").first() ;
@@ -75,8 +72,7 @@ if(theFolder){
         debug ? console.log("theMapView = " + theMapView.name) : true;
     }
     var theMapViewRef1 = theViewDetail.createViewReference(theMapView, 90, 10, 210, 25);
-    var theMapViewRef2 = theViewUsage.createViewReference(theMapView, 90, 10, 210, 25);
-    debug ? console.log("theMapViewRef are created") :  true;
+     debug ? console.log("theMapViewRef is created") :  true;
 
     // Ajout de la note de Titre avec le "périmètre" pour préfixe - cf le controle que le concept soit "bien" classé
     var theConceptParent = $(theConcept).parent().first();
@@ -86,18 +82,7 @@ if(theFolder){
     theNoteDetail.fontStyle = "bold";
     theNoteDetail.setLabelExpression("${content} / $vfolder{name} / $view{name}");
 
-    var theNoteUsage = theViewUsage.createObject("diagram-model-note", 310, 10, 600, 25)
-    theNoteUsage.setText(theConceptParent2.name );
-    theNoteUsage.fontStyle = "bold";
-    theNoteUsage.setLabelExpression("${content} / $vfolder{name} / $view{name}");
-
-    debug ? console.log("theNote are created") :  true;
-
-    // création d'un viewRef sur theViewUSage vers theViewDetail
-    theViewUsage.createViewReference(theViewDetail, 920, 10, 100, 25);
-
-    // création d'un viewRef sur theViewDetail vers theViewUsage
-    theViewDetail.createViewReference(theViewUsage, 920, 10, 100, 25);
+     debug ? console.log("theNote is created") :  true;
 }
 
 // Ajout d'un ViewRef sur theConceptVO (si il n'y en a pas déja un)
@@ -109,11 +94,6 @@ if($(theConceptVO).children("diagram-model-reference").size()==0){
         theViewDetail = $(theFolder).children().filter(c=>{return c.name == "Detail"}).first();
         debug ? console.log("theViewDetail qui existe déja = " + theViewDetail) : true;
         debug ? console.log("theViewDetail qui existe déja (parent) = " + $(theViewDetail).parent().first().name) : true;
-    }
-    if(!theViewUsage){
-        // si theViewUsage n'est pas défini, c'est qu'il existe déja (TODO refactor ?)
-        theViewUsage = $(theFolder).children().filter(c=>{return c.name == "Usage"}).first();
-        debug ? console.log("theViewUsage qui existe déja = " + theViewUsage) : true;
     }
 
     // création of theConceptVOViewRef : systématiquement vers Détail

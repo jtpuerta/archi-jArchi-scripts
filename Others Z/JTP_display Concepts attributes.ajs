@@ -8,8 +8,9 @@ console.clear();
 console.log("> Start");
 
 var theCurrentVisualObject = $(selection).filter("element").first();
-if(!theCurrentVisualObject){
-    console.log("!! sélectionner un objet concept");
+var theCurrentView = $(selection).first().view;
+if(!theCurrentVisualObject  || !theCurrentView ){
+    console.log("!! sélectionner un objet concept dans une vue");
     exit();
 }
 
@@ -20,22 +21,24 @@ console.log("                         fontColor = " + theCurrentVisualObject.fon
 var theCurrentConcept = theCurrentVisualObject.concept;
 console.log("theCurrentConcept : " + theCurrentConcept);
 
-var theCurrentView =  theCurrentVisualObject.view;
 console.log("theCurrentView = " + theCurrentView);
 
-console.log("theCurrentView : Children size = " + $("#"+theCurrentView.id).children().size());
+console.log("theCurrentView : Children size = " + $(theCurrentView).children().size());
 
-console.log("theCurrentView : Find 'diagram-model-group' size = " + $("#"+theCurrentView.id).find("diagram-model-group").size());
+console.log("theCurrentView : Find 'diagram-model-group' size = " + $(theCurrentView).find("diagram-model-group").size());
 
-var theCurrentGroup = $("#" + theCurrentVisualObject.id).parent().first(); 
+var theCurrentGroup = $(theCurrentVisualObject).parent().first(); 
 console.log("theCurrentGroup : " + theCurrentGroup );
 
 console.log("theCurrentVisualObject children de type 'diagram-model-reference' :");
-$("#"+theCurrentVisualObject.id).children("diagram-model-reference").each(visualObject =>{
+$(theCurrentVisualObject).children("diagram-model-reference").each(visualObject =>{
     console.log("- " + visualObject);
 });
 
 console.log("theCurrentVisualObject children de type 'element' :");
-$("#"+theCurrentVisualObject.id).children("element").each(visualObject =>{
+$(theCurrentVisualObject).children("element").each(visualObject =>{
     console.log("- " + visualObject);
 });
+
+console.log("theCurrentView folder parent = " + $(theCurrentView).parent() );
+

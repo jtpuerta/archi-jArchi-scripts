@@ -7,8 +7,10 @@ var theConceptVO;
 theConceptVO = $(selection).first();
 
 if( !theConceptVO.view || !theConceptVO.concept){
-    console.log("!! select a Concept VO in the current view");
+    console.log("!! select at least one Concept VO in the current view");
     exit();
 }
 
-theConceptVO.setFontStyle("bold");
+$(selection).each( c =>{ 
+    c.setFontStyle("bold");
+})

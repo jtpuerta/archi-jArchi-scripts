@@ -116,14 +116,8 @@ if($(theConceptVO).children("diagram-model-reference").size()==0){
         debug ? console.log("theViewUsage qui existe déja = " + theViewUsage) : true;
     }
 
-    // création of theConceptVOViewRef en fonction de theView
-    if(theView.name == "Map des Applications"){
-        // on pointe vers "Detail"
-        var theConceptVOViewRef = theConceptVO.createViewReference(theViewDetail, 0, 0, 25, 25); 
-    } else {
-        // on pointe vers "Usage"
-        var theConceptVOViewRef = theConceptVO.createViewReference(theViewUsage, 0, 0, 25, 25); 
-    }
+    // création of theConceptVOViewRef : systématiquement vers Détail
+    var theConceptVOViewRef = theConceptVO.createViewReference(theViewDetail, 0, 0, 25, 25); 
 }
 else{
     console.log("> theConceptVOViewRef already exists");

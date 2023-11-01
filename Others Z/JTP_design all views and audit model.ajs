@@ -1,9 +1,10 @@
 ﻿/*
  * Enable to apply a common visual design on all views of the model
+ * + Audit the model to check TODO
  *
  */
  
-var debug = true;
+var debug = false;
 console.clear();
 console.show();
 
@@ -16,5 +17,37 @@ theViewRefs = $("view").find("diagram-model-reference");
 theViewRefs.each( v => {
     v.fontColor = "#0000ff";    // bleu vif
 });
+
+console.log("\n1: search for non classified concepts");
+theConcepts = $("element");
+debug ? console.log("Concepts size = " + theConcepts.size()) : true;
+theConcepts.each( c => {
+    if ($(c).parents().size() < 3 ) console.log("Pb pour " + c.name + " => parents = " + $(c).parents() );
+} );
+
+console.log("\n2: search for Capability without folder view");
+theConcepts = $("capability");
+debug ? console.log("Capability size = " + theConcepts.size()) : true;
+theViews = $(".Usage");
+debug ? console.log("Capability views folders size = " + theViews.parent().size() ) : true;
+
+theConcepts.each( c => {
+    var nb = theViews.parent().filter(p=>{return p.name == c.name}).size();
+    if( nb == 0 ) console.log("Pb this Cap has no folder view : " + c.name );
+    if( nb > 1 ) console.log("Pb this Cap has more than 1 folder view : " + c.name );
+} );
+
+console.log("\n3: search for Application without folder view");
+theConcepts = $("application-component");
+debug ? console.log("Appli size = " + theConcepts.size()) : true;
+theViews = $(".Detail");
+debug ? console.log("Appli views folders size = " + theViews.parent().size() ) : true;
+
+theConcepts.each( c => {
+    var nb = theViews.parent().filter(p=>{return p.name == c.name}).size();
+    if( nb == 0 ) console.log("Pb this Appli has no folder view : " + c.name );
+    if( nb > 1 ) console.log("Pb this Appli has more than 1 folder view : " + c.name );
+} );
+
 
 

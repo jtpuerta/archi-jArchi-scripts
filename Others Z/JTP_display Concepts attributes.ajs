@@ -42,3 +42,6 @@ $(theCurrentVisualObject).children("element").each(visualObject =>{
 
 console.log("theCurrentView folder parent = " + $(theCurrentView).parent() );
 
+console.log("theCurrentConcept folder parent = " + $(theCurrentConcept).parent() );
+
+

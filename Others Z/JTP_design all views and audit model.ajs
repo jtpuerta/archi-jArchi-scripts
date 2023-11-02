@@ -1,6 +1,9 @@
 ﻿/*
  * Enable to apply a common visual design on all views of the model
- * + Audit the model to check conformity
+ * + Audit the model to check conformity:
+ * - Elements must be classified under 3 forlders (main / thematiques / master name)
+ * - Capability must have a View "Usage" under a folder with the same name than the Capability
+ * - Application must have a View with the same name than the Application
  *
  */
  

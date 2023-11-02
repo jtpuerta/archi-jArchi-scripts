@@ -13,7 +13,6 @@ console.log("> Start");
 var theConceptVO;
 var theConcept;
 var theView;
-var theFolder;
 var theViewDetail;
 var theViewUsage;
 
@@ -41,22 +40,21 @@ if($(theConcept).parent().parent().parent().first().name != "Application"){
     exit();
 }
 
-// si le Folder avec le nom du Concept n'existe pas déja (dans les Views), alors Création
-theFolder = $("folder.Views").find("folder").filter( folder => {
-    return folder.name == theConceptVO.name ? true : false;
+// si la view n'existe pas déja, alors création
+theViewDetail = $("views").filter( v => {
+    return v.name == theConceptVO.name ? true : false;
 }).first();
-debug ? console.log("theFolder = " + theFolder) : true;
+debug ? console.log("theViewDetail = " + theViewDetail) : true;
 
-if(theFolder){
-    console.log("> The Folder already exists");
+if(theViewDetail){
+    console.log("> The view already exists");
 }else{
-    console.log("> The Folder does not exist");
+    console.log("> The view does not exist");
 
-    // Création du Folder et de la view  ViewDetail 
-    theFolder = $("folder.Views").first().createFolder(theConceptVO.name);
-    theViewDetail = model.createArchimateView("Default",theFolder);
-    theViewDetail.name = "Detail";
-    debug ? console.log("theFolder and the view are created") : true;
+    // Création de la view  ViewDetail 
+    theViewDetail = model.createArchimateView("Default",$("folder.Views").first());
+    theViewDetail.name = theConcept.name;
+    debug ? console.log("the view is created") : true;
 
     // Ajout du viewRef vers "TOC"
     var theTocView = $(".TOC").filter("archimate-diagram-model").first() ;

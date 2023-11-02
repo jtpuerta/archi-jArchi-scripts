@@ -41,7 +41,7 @@ if($(theConcept).parent().parent().parent().first().name != "Application"){
 }
 
 // si la view n'existe pas déja, alors création
-theViewDetail = $("views").filter( v => {
+theViewDetail = $("view").filter( v => {
     return v.name == theConceptVO.name ? true : false;
 }).first();
 debug ? console.log("theViewDetail = " + theViewDetail) : true;

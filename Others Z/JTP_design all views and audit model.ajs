@@ -1,6 +1,6 @@
 ﻿/*
  * Enable to apply a common visual design on all views of the model
- * + Audit the model to check TODO
+ * + Audit the model to check conformity
  *
  */
  

@@ -4,7 +4,7 @@
  *
  */
  
-var debug = false;
+var debug = true;
 console.clear();
 console.show();
 
@@ -37,16 +37,16 @@ theConcepts.each( c => {
     if( nb > 1 ) console.log("Pb this Cap has more than 1 folder view : " + c.name );
 } );
 
-console.log("\n3: search for Application without folder view");
+console.log("\n3: search for Application without a view with same name");
 theConcepts = $("application-component");
 debug ? console.log("Appli size = " + theConcepts.size()) : true;
-theViews = $(".Detail");
-debug ? console.log("Appli views folders size = " + theViews.parent().size() ) : true;
+theViews = $("view");
+debug ? console.log("views size = " + theViews.size() ) : true;
 
 theConcepts.each( c => {
-    var nb = theViews.parent().filter(p=>{return p.name == c.name}).size();
-    if( nb == 0 ) console.log("Pb this Appli has no folder view : " + c.name );
-    if( nb > 1 ) console.log("Pb this Appli has more than 1 folder view : " + c.name );
+    var nb = theViews.filter(v=>{return v.name == c.name}).size();
+    if( nb == 0 ) console.log("Pb this Appli has no view : " + c.name );
+    if( nb > 1 ) console.log("Pb this Appli has more than 1 view : " + c.name );
 } );
 
 

@@ -42,7 +42,7 @@ theConcepts.each( c => {
 
 console.log("\n3: search for MAIN Application without a view with same name. Rq: MAIN app have a parent folder with same name");
 theConcepts = $("application-component").filter( a => { return $(a).parent().first().name == a.name });
-debug ? console.log("Appli size = " + theConcepts.size()) : true;
+debug ? console.log("MAIN Appli size = " + theConcepts.size()) : true;
 theViews = $("view");
 debug ? console.log("views size = " + theViews.size() ) : true;
 

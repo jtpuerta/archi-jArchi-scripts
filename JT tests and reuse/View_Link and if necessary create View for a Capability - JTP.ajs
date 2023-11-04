@@ -1,5 +1,5 @@
 ﻿/*
- * Create a Folder and the views for a capability 
+ * Create the view for a capability 
  * + Create a Viewref toward the Canvas View
  */
 
@@ -73,14 +73,10 @@ if(theViewUsage){
     var theMapViewRef2 = theViewUsage.createViewReference(theMapView, 90, 10, 210, 25);
     debug ? console.log("theMapViewRef is created") :  true;
 
-    // Ajout de la note de Titre avec le "périmètre" pour préfixe et thelabelExpression adhoc
-    var theConceptParent = $(theConcept).parent().first();
-    var theConceptParent2 = $(theConceptParent).parent().first();
-    
+    // Ajout de la note de Titre
     var theNoteUsage = theViewUsage.createObject("diagram-model-note", 310, 10, 600, 25)
-    theNoteUsage.setText( theConceptParent2.name );
     theNoteUsage.fontStyle = "bold";
-    theNoteUsage.setLabelExpression("${content} / $vfolder{name} / $view{name}");
+    theNoteUsage.setLabelExpression("$vfolder{name} / $view{name}");
     debug ? console.log("theNote is created") :  true;
 }
 

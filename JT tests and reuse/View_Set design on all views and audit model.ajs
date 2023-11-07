@@ -5,6 +5,7 @@
  * - Capability must have a View "Usage" under a folder with the same name than the Capability
  * - Application must have a View with the same name than the Application
  *
+ *
  */
  
 var debug = true;

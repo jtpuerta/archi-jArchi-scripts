@@ -32,13 +32,7 @@ if(!theView) {
 debug ? console.log("theConceptVO = " + theConceptVO.name) : true;
 debug ? console.log("theView = " + theView.name) : true;
 
-// theConcept correspondant à theConceptVO doit être bien classé: dans un folder/folder de "Process"
 theConcept = theConceptVO.concept;
-debug ? console.log("theConcept Parent x 3 = " + $(theConcept).parent().parent().parent()) : true;
-if($(theConcept).parent().parent().parent().first().name != "Process"){
-    console.log("!! theconcept doit être classé dans un sous-sous-repertoire de Process");
-    exit();
-}
 
 // si la view n'existe pas déja, alors création
 theViewDetail = $("view").filter( v => {

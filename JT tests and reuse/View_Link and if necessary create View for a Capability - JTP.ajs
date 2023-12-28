@@ -33,13 +33,7 @@ if(!theView) {
 debug ? console.log("theConceptVO = " + theConceptVO.bounds) : true;
 debug ? console.log("theView = " + theView.name) : true;
 
-// theConcept correspondant à theConceptVO doit être bien classé: dans un folder/folder de "Strategy"
 theConcept = theConceptVO.concept;
-debug ? console.log("theConcept Parent x 3 = " + $(theConcept).parent().parent().parent()) : true;
-if($(theConcept).parent().parent().parent().first().name != "Strategy"){
-    console.log("!! theconcept doit être classé dans un sous-sous-repertoire de Strategy");
-    exit();
-}
 
 // si la vue n'existe pas déja (dans les Views), alors Création
 theViewUsage = $("view").filter( v => {

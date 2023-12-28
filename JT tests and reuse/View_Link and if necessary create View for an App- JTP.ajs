@@ -38,6 +38,8 @@ theViewDetail = $("view").filter( v => {
 }).first();
 debug ? console.log("theViewDetail = " + theViewDetail) : true;
 
+theConcept = theConceptVO.concept;
+
 if(theViewDetail){
     console.log("> The view already exists");
 }else{

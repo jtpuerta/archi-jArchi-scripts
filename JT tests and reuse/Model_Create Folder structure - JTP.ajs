@@ -16,6 +16,28 @@ if(!theFolderRoot) {
 }
 
 var theFolderStruct;
+
+theFolderStruct = [
+"Analyse d'entreprise",
+"Bureau de service",
+"Conception du service",
+"Contrôle du changement",
+"Gestion d'actifs informatiques",
+"Gestion de la configuration du service",
+"Gestion de la continuité du service",
+"Gestion de la disponibilité",
+"Gestion des capacités et du rendement",
+"Gestion des demandes de service",
+"Gestion des incidents",
+"Gestion des problèmes",
+"Gestion des rejets",
+"Gestion du catalogue de services",
+"Gestion du niveau de service",
+"Suivi et gestion des événements",
+"Validation et test de service"
+];
+
+/*
 theFolderStruct = [
     "Administration",
     "Alimentation et Agriculture",
@@ -29,6 +51,7 @@ theFolderStruct = [
     "Habitat",
     "Mobilité"
 ];
+*/
 
 for(i = 0; i < theFolderStruct.length; i++ ){
     debug ? console.log("- " + theFolderStruct[i]) : true;

@@ -1,0 +1,79 @@
+/*
+ * Heat
+ * 
+ * Set the colour of elements depending on a property value
+ * 
+ * (c) 2018 Jean-Baptiste Sarrodie, Phillip Beauvoir
+ * 
+ * This work is licensed under the HUMANS Licence described below.
+ * 
+ * The HUMANS (Help Us Make Archi Noteworthy & Sustainable) licence goal is to bring happiness
+ * to both Archi users and developers. This means that we would like users of
+ * jArchi to donate something and get this useful script as a gift in return (and feel great!).
+ *
+ * The only restrictions that apply are:
+ *  - You can't redistribute this script.
+ *  - You can't use this script for commercial purposes unless you obtained it from the official Archi distribution channels.
+ * 
+ */ 
+
+console.show();
+console.clear();
+console.log("> Start");
+
+// Amplify elements that have the property "status"
+
+// see https://github.com/archimatetool/archi-scripting-plugin/wiki/jArchi-Quick-Start (the end)
+// see https://github.com/archimatetool/archi-scripting-plugin/wiki/jArchi-Collection
+
+if ($(selection).first().view) {
+    console.log("> Selected elements...");
+    console.log("> nb = " + $(selection).size());
+    amplifySelectedElementsColor("status");
+} else {
+    console.log("> All elements...");
+    console.log("> nb = " + $("element").size());
+    amplifyAllElementsColor("status");
+}
+console.log("> Done");
+
+function amplifyAllElementsColor(propertyKey) {
+    // Iterate through all elements in the model
+    $("element").forEach(function(e) {
+        // Find the property value with the given propertyKey
+        var value = e.prop(propertyKey);
+        // If within scope, change color of element's view instances
+        if(value) {
+            // Set all view instances of the element's color according to the property value
+            $(e).objectRefs().attr("fillColor", getColorValue(value));
+        }else{
+            $(e).objectRefs().attr("fillColor", null);    // default color
+        }
+    });
+}
+
+function amplifySelectedElementsColor(propertyKey) {
+    // Iterate through selected elements 
+    $(selection).forEach(function(e) {
+        // Find the property value with the given propertyKey
+        var value = e.prop(propertyKey);
+        // If within scope, change color of element's view instances
+        if(value) {
+            // Set all view instances of the element's color according to the property value
+            $(e.concept).objectRefs().attr("fillColor", getColorValue(value));
+        }else{
+            $(e.concept).objectRefs().attr("fillColor", null);    // default color
+        }
+    });
+}
+
+//  Mapping propValue => colors: new (green), coming soon (pink), problem(red), to rework (orange), to suppress(grey)
+function getColorValue(theValue){
+    if(theValue == "new")           return "#00ff00";  // green
+    if(theValue == "coming soon")   return "#ff00ff";  // pink
+    if(theValue == "problem")       return "#ff8080";  // red
+    if(theValue == "to rework")     return "#ffA500";  // orange
+    if(theValue == "to suppress")   return "#c0c0c0";  // grey
+    // si c'est une autre valeur que celles ci-dessus, alors on ne change pas la couleur éventuellement présente (?)
+}
+

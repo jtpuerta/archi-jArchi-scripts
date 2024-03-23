@@ -1,0 +1,47 @@
+// set status properties
+// new, comming soon, problem, to suppress
+
+console.show();
+console.clear();
+console.log("> Start");
+
+// window.alert("FillColor of the selected elements = " + $(selection).attr("fillColor"));
+
+//  new(green), comming soon (pink), problem(red), to rework (orange), to suppress(grey)
+
+var statusValue = window.promptSelection("Which value do you want to set for status prop. (or set empty) ?",
+								["new","coming soon","problem","to rework","to suppress",""]);
+if (statusValue) {
+	$(selection).prop("status", statusValue);
+	}else {
+	$(selection).removeProp("status");
+}
+
+amplifySelectedElementsColor("status");
+
+function amplifySelectedElementsColor(propertyKey) {
+    // Iterate through selected elements 
+    $(selection).forEach(function(e) {
+        // Find the property value with the given propertyKey
+        var value = e.prop(propertyKey);
+        // If within scope, change color of element's view instances
+        if(value) {
+            // Set all view instances of the element's color according to the property value
+            $(e.concept).objectRefs().attr("fillColor", getColorValue(value));
+        }else{
+			$(e.concept).objectRefs().attr("fillColor", null);  // default color
+		}
+    });
+}
+
+//  Mapping propValue => colors: new (green), coming soon (pink), problem(red), to rework (orange), to suppress(grey)
+function getColorValue(theValue){
+    if(theValue == "new")           return "#00ff00";  // green
+    if(theValue == "coming soon")   return "#ff00ff";  // pink
+    if(theValue == "problem")       return "#ff8080";  // red
+    if(theValue == "to rework")     return "#ffA500";  // orange
+    if(theValue == "to suppress")   return "#c0c0c0";  // grey
+	// si c'est une autre valeur que celles ci-dessus, alors on ne change pas la couleur éventuellement présente (?)
+}
+
+console.log("> Done");

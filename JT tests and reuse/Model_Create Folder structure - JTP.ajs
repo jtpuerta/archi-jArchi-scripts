@@ -16,7 +16,7 @@ if(!theFolderRoot) {
 }
 
 var theFolderStruct;
-
+/*
 theFolderStruct = [
 "Analyse d'entreprise",
 "Bureau de service",
@@ -36,8 +36,8 @@ theFolderStruct = [
 "Suivi et gestion des événements",
 "Validation et test de service"
 ];
+*/
 
-/*
 theFolderStruct = [
     "Administration",
     "Alimentation et Agriculture",
@@ -51,7 +51,7 @@ theFolderStruct = [
     "Habitat",
     "Mobilité"
 ];
-*/
+
 
 for(i = 0; i < theFolderStruct.length; i++ ){
     debug ? console.log("- " + theFolderStruct[i]) : true;

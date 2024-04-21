@@ -50,8 +50,8 @@ if(theViewDetail){
     theViewDetail.name = theConcept.name;
     debug ? console.log("the view is created") : true;
 
-    // Ajout du viewRef vers "TDM"
-    var theTocView = $(".TDM").filter("archimate-diagram-model").first() ;
+    // Ajout du viewRef vers "TdM"
+    var theTocView = $(".TdM").filter("archimate-diagram-model").first() ;
     var theTocViewRef1 = theViewDetail.createViewReference(theTocView, 10, 10, 70, 25);
      debug ? console.log("theTocViewRef are created") :  true;
 

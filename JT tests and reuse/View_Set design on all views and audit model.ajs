@@ -22,6 +22,12 @@ theViewRefs.each( v => {
     v.fontColor = "#0000ff";    // bleu vif
 });
 
+theViewRefs = $("view").find("diagram-model-note");
+theViewRefs.each( v => {
+    v.gradient = GRADIENT.BOTTOM;
+});
+
+
 console.log("\n1: search for non classified concepts");
 theConcepts = $("element");
 debug ? console.log("Concepts size = " + theConcepts.size()) : true;

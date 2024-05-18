@@ -16,15 +16,17 @@ if(!theFolderRoot) {
 }
 
 var theFolderStruct;
-/*
+
+
 theFolderStruct = [
-"Analyse d'entreprise",
+    /*
+"Analyse métier",
 "Bureau de service",
-"Conception du service",
+"Conception des services",
 "Contrôle du changement",
 "Gestion d'actifs informatiques",
-"Gestion de la configuration du service",
-"Gestion de la continuité du service",
+"Gestion de la configuration des services",
+"Gestion de la continuité des services",
 "Gestion de la disponibilité",
 "Gestion des capacités et du rendement",
 "Gestion des demandes de service",
@@ -32,12 +34,32 @@ theFolderStruct = [
 "Gestion des problèmes",
 "Gestion des rejets",
 "Gestion du catalogue de services",
-"Gestion du niveau de service",
+"Gestion du niveau des services",
 "Suivi et gestion des événements",
-"Validation et test de service"
-];
+"Validation et test des services",
+//
+"Amélioration continue",
+"Gestion de l'architecture",
+"Gestion de la main d'oeuvre et des talents",
+"Gestion de la sécurité de l'information",
+"Gestion de la stratégie",
+"Gestion de portefeuille",
+"Gestion de projet",
+"Gestion des connaissances",
+"Gestion des fournisseurs",
+"Gestion des relations",
+"Gestion des risques",
+"Gestion du changement organisationnel",
+"Gestion financière des services",
+"Mesures et rapports",
+//
 */
+"Gestion de l'Infrastructure et des Plateformes",
+"Gestion du déploiement",
+"Gestion du dév. et des logiciels"
+];
 
+/*
 theFolderStruct = [
     "Administration",
     "Alimentation et Agriculture",
@@ -51,13 +73,16 @@ theFolderStruct = [
     "Habitat",
     "Mobilité"
 ];
-
+*/
 
 for(i = 0; i < theFolderStruct.length; i++ ){
     debug ? console.log("- " + theFolderStruct[i]) : true;
 }
 
+
 for(i = 0; i < theFolderStruct.length; i++ ){
     theFolderRoot.createFolder(theFolderStruct[i]);
+    //model.createElement("capability",theFolderStruct[i]);
 }
+
 console.log("> End");

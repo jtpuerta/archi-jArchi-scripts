@@ -21,7 +21,7 @@ var theFolderStruct;
 theFolderStruct = [
     /*
 "Analyse métier",
-"Bureau de service",
+"Bureau des services",
 "Conception des services",
 "Contrôle du changement",
 "Gestion d'actifs informatiques",
@@ -29,7 +29,7 @@ theFolderStruct = [
 "Gestion de la continuité des services",
 "Gestion de la disponibilité",
 "Gestion des capacités et du rendement",
-"Gestion des demandes de service",
+"Gestion des demandes de services",
 "Gestion des incidents",
 "Gestion des problèmes",
 "Gestion des rejets",

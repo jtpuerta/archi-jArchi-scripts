@@ -55,10 +55,10 @@ if(theViewDetail){
     var theTocViewRef1 = theViewDetail.createViewReference(theTocView, 10, 10, 70, 25);
      debug ? console.log("theTocViewRef are created") :  true;
 
-    // Ajout du viewRef vers "Map des Services"
-    var theMapView = $(".Map des Services").filter("archimate-diagram-model").first() ;
+    // Ajout du viewRef vers "Map des Processus Métier"
+    var theMapView = $(".Map des Processus Métier").filter("archimate-diagram-model").first() ;
     if(!theMapView) {
-        console.log("!! 'Map des Services'  does not exist")
+        console.log("!! 'Map des Processus Métier'  does not exist")
         exit();
     } else {
         debug ? console.log("theMapView = " + theMapView.name) : true;

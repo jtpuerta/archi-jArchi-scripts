@@ -15,6 +15,8 @@ console.show();
 theConceptVOs = $("view").find("element");
 theConceptVOs.each( c => {
     c.gradient = GRADIENT.TOP;
+    //c.fontSize = 9;
+    //c.fontName = "Segoe UI";
 });
 
 theViewRefs = $("view").find("diagram-model-reference");

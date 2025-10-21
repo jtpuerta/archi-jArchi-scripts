@@ -55,10 +55,10 @@ if(theViewDetail){
     var theTocViewRef1 = theViewDetail.createViewReference(theTocView, 10, 10, 70, 25);
      debug ? console.log("theTocViewRef are created") :  true;
 
-    // Ajout du viewRef vers "Map des Services d'Infra"
-    var theMapView = $(".Map des Services d'Infra").filter("archimate-diagram-model").first() ;
+    // Ajout du viewRef vers "Map des Infras numériques"
+    var theMapView = $(".Map des Infras numériques").filter("archimate-diagram-model").first() ;
     if(!theMapView) {
-        console.log("!! 'Map des Services d'Infra'  does not exist")
+        console.log("!! 'Map des Infras numériques'  does not exist")
         exit();
     } else {
         debug ? console.log("theMapView = " + theMapView.name) : true;

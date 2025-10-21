@@ -16,10 +16,10 @@ if(!theFolderRoot) {
 }
 
 var theFolderStruct;
+var theFolderStructArchimate;
+var theFolderStructITILV4Practices;
 
-
-theFolderStruct = [
-    /*
+theFolderStructITILV4Practices = [
 "Analyse métier",
 "Bureau des services",
 "Conception des services",
@@ -53,14 +53,12 @@ theFolderStruct = [
 "Gestion financière des services",
 "Mesures et rapports",
 //
-*/
 "Gestion de l'Infrastructure et des Plateformes",
 "Gestion du déploiement",
 "Gestion du dév. et des logiciels"
 ];
 
-/*
-theFolderStruct = [
+theFolderStructArchimate = [
     "Administration",
     "Alimentation et Agriculture",
     "Aménagement",
@@ -73,7 +71,8 @@ theFolderStruct = [
     "Habitat",
     "Mobilité"
 ];
-*/
+
+theFolderStruct = theFolderStructArchimate
 
 for(i = 0; i < theFolderStruct.length; i++ ){
     debug ? console.log("- " + theFolderStruct[i]) : true;

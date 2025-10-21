@@ -17,8 +17,8 @@
  * 
  */ 
 
-var oldFontSize = 12;
-var newFontSize = 9;
+var oldFontSize = 9;
+var newFontSize = 10;
 
 
 // Iterate through all views and their child object

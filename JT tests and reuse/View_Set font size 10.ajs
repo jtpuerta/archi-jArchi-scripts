@@ -1,0 +1,22 @@
+// Set/unset the italic font for the selected ConceptVO
+
+var debug = true;
+
+console.clear();
+console.show();
+
+var theConceptVO;
+theConceptVO = $(selection).first();
+
+if( !theConceptVO.view || !theConceptVO.concept){
+    console.log("!! select at least one Concept VO in the current view");
+    exit();
+}
+
+$(selection).each( c =>{ 
+    debug ? console.log ("Avant : " + c.fontSize) :true;
+    
+    c.setFontSize(10); 
+
+    debug ? console.log ("Avant : " + c.fontSize) :true;
+})

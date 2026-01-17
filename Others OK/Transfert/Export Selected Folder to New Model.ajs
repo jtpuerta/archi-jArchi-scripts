@@ -1,0 +1,979 @@
+/*
+ * Export Selected Folder in Source Model to New Target Model
+ *
+ * https://gist.github.com/fanievh/4ec7d14247616846f3d16b5e22dc80a9
+ * 
+ * This script copies a selected subset of a source model to a target model.  The folder selected
+ * in the source model, will become the top level folder in the Views folder in the target model. Only
+ * elements, relationships, diagram objects, connections and images on any of the views in the selected
+ * folder in the source model, will be created in the target model.
+ * 
+ * The script has the following major steps:
+ * 1. Iterate through the selected folder in the source model and create this folder, sub-folders and views
+ *    in the target model.
+ * 2. Collect all the elements and relationships into 2 arrays: elements and relationships. Do this to ensure
+ *    that no duplicates are in the 2 arrays. The object.id is used as the unique key.
+ * 3. Create the elements in the target model by iterating through the elements array.
+ * 4. Create the relationships in the target model by iterating through the relationships array.
+ * 5. Create the diagram objects in the target model by iterating through the diagram objects in the source
+ *    model.
+ * 6. Create the diagram connections in the target model by iterating through the diagram connections in
+ *    the source model.
+ * 7. Copy the custom images in the source model to a temporary directory (___DIR___/images) and upload and
+ *    set the image property on the relevant diagram objects in the target model.
+ * 
+ * Current known limitations:
+ * - The focus of the script is on Archimate and not Canvas and Sketch Views.
+ * - Doesn't support duplicate properties on elements.
+ * 
+ * - v1.0 - Initial version
+ * - v1.1 - Changed the way how source and target diagram objects are selected when creating diagram
+ *          connections. v1.0 didn't work correctly when the same element appeared multiple times
+ *          on a diagram.
+ * - v1.2 - Added code to copy custom images from the source model to the target model and some code
+ *          refactoring
+ * - v1.2a - Bug fixes, added code to deal with relationships connecting to relationships because the
+ *           original code didn't consider this. It won't handle all the cases.  For now just write
+ *           messages to the console when this occurs.  The future solution is to reorder the sequence
+ *           in which relationships and diagram connections are created to deal with dependencies.
+ * - v1.3 - Use topological sort to order the sequence in which relationships and diagram connections
+ *          are created. Added view references. Bug fixes.
+ * - v1.3a - Added check if selection is a valid folder in Views.
+ * - v1.3b - Bug fix to copy images set in Diagram Notes. (Bug identified and fix proposed by
+ *           https://gist.github.com/romualdrichard)
+ * - v1.3c - Added copying of iconColor property.
+ * - v1.3d - Bug fix how unordered and ordered arrays for relationships and diagram
+ *           connections are combined.
+ * - v1.3e - Bug fix to use topological sort for any relationship / diagram connection where the source
+ *           or target is any type of relationship and not just diagram-model-connection (const connectionTypes):     
+ *           https://github.com/archimatetool/archi-scripting-plugin/wiki/jArchi-Collection#object-selector-type
+ * - v1.3f - Bug fix to include diagram-model-connection in the target views. Added support for Visual Object
+ *           and Connection properties supported in jArchi 1.6, 1.7 and 1.8: lineWidth, deriveLineColor, index,
+ *           lineStyle.
+ * - v1.3g - Set target model documentation to selected folder documentation.
+ * - v1.3h - Added connectionRouter property for views supported from jArchi 1.11. Added support for coArchi 2
+ *           models stored in git repository format.
+ * 
+ * Leveraged various community developed scripts as input.
+ * Use script https://gist.github.com/shinout/1232505 from Shin Suzuki for topological sort of
+ * relationships and diagram connections
+ * 
+ * Author: Fanie van Heerden, 2023-2025
+ *
+ */
+
+let sourceModel = null;
+let targetModel = null;
+let folderMapping = [];
+let viewMapping = [];
+let elements = [];
+let elementMapping = [];
+let relationships = [];
+let relationshipMapping = [];
+let diagramObjectsMapping = [];
+let customImages = [];
+let objectToImage = new Map();
+
+const ZipFile = Java.type("java.util.zip.ZipFile");
+const InputStream = Java.type("java.io.InputStream");
+const File = Java.type("java.io.File");
+const FileOutputStream = Java.type("java.io.FileOutputStream");
+const Files = Java.type("java.nio.file.Files");
+const Paths = Java.type("java.nio.file.Paths");
+
+const connectionTypes = new Set(["composition-relationship", "aggregation-relationship",
+    "assignment-relationship", "realization-relationship", "serving-relationship",
+    "access-relationship", "influence-relationship", "triggering-relationship",
+    "flow-relationship", "specialization-relationship", "association-relationship",
+    "diagram-model-connection"]);
+
+
+// set to true for verbose console messages or false for limited console messages
+const debug = false;
+
+
+// Show progress in the console for longer running steps
+class Progress {
+    constructor(numItems, percentInc) {
+        this.counter = 0;
+        this.percentInc = percentInc;
+        this.showEvery = Math.ceil(numItems * percentInc / 100);
+      
+    }
+
+    showProgress() {
+        this.counter++;
+ 
+        if (this.counter % this.showEvery === 0) {
+            let inc = this.counter / this.showEvery;
+            let str = "*".repeat(inc) + " " + inc * this.percentInc  +"%";
+            console.log(str);
+        }
+
+    }
+}
+
+
+// function checks if the selection is the Views folder or a sub-folder
+// of Views
+function isValidSelection(item)
+{
+
+    if (item.type !== "folder") {
+        console.log("Selection has to be a folder in Views")
+        return false;
+    }
+
+    if (item.name === "Views") {
+        return true;
+    }
+
+    let parent = $(item).parents().filter(".Views");
+    if (parent.size() > 0) {
+        return true;
+    } else {
+        console.log("\"" + item.name + "\" is not a valid selection");
+        return false;
+    }
+   
+}
+
+
+function CleanFileName(theString) {
+    let regex = /[\[\]\(\)\#\\\/\"]/gi;
+    return theString.replace(regex,"")
+                    .replaceAll(" ","-");
+}
+
+
+/**
+ * general topological sort
+ * @author SHIN Suzuki (shinout310@gmail.com)
+ * @param Array<Array> edges : list of edges. each edge forms Array<ID,ID> e.g. [12 , 3]
+ *
+ * @returns Array : topological sorted list of IDs
+ **/
+
+function tsort(edges) {
+    var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
+        sorted  = [], // sorted list of IDs ( returned value )
+        visited = {}; // hash: id of already visited node => true
+  
+    var Node = function(id) {
+      this.id = id;
+      this.afters = [];
+    }
+  
+    // 1. build data structures
+    edges.forEach(function(v) {
+      var from = v[0], to = v[1];
+      if (!nodes[from]) nodes[from] = new Node(from);
+      if (!nodes[to]) nodes[to]     = new Node(to);
+      nodes[from].afters.push(to);
+    });
+  
+    // 2. topological sort
+    Object.keys(nodes).forEach(function visit(idstr, ancestors) {
+      var node = nodes[idstr],
+          id   = node.id;
+  
+      // if already exists, do nothing
+      if (visited[idstr]) return;
+  
+      if (!Array.isArray(ancestors)) ancestors = [];
+  
+      ancestors.push(id);
+  
+      visited[idstr] = true;
+  
+      node.afters.forEach(function(afterID) {
+        if (ancestors.indexOf(afterID) >= 0)  // if already in ancestors, a closed chain exists.
+          throw new Error('closed chain : ' +  afterID + ' is in ' + id);
+  
+        visit(afterID.toString(), ancestors.map(function(v) { return v })); // recursive call
+      });
+  
+      sorted.unshift(id);
+    });
+  
+    return sorted;
+  }
+
+
+
+// copy the properties from an object in the source model to an object in the target model
+function copyProperties(sourceObject, targetObject) {
+
+    let properties = sourceObject.prop();
+  
+    for (let j = 0; j < properties.length; j++){
+        if (debug) {console.log("Set property = " + properties[j]);}
+        targetObject.prop(properties[j], sourceObject.prop(properties[j], false), false);
+    }
+}
+
+
+// create and copy a specialization from an object in the source model to an object in the target model
+function copySpecialization(sourceObject, targetObject) {
+    
+    let specializationName = sourceObject.specialization;
+
+    if (specializationName && specializationName.length > 0) {
+        let sourceSpecialization = sourceModel.findSpecialization(specializationName, sourceObject.type);
+        let image = sourceSpecialization.image;
+
+        if (image) {
+            let imagePath = image.get("path");
+            customImages[imagePath] = null;
+        }
+
+        let targetSpecialization = targetModel.findSpecialization(sourceSpecialization.name, sourceSpecialization.type);
+        if (targetSpecialization) {
+            if (debug) {console.log("Set object specialization to: " + targetSpecialization.name);}
+            targetObject.specialization = targetSpecialization.name;
+        } else {
+            if (debug) {console.log("Create Specialization Name = " + sourceSpecialization.name + " ; Type = " + sourceSpecialization.type);}
+            targetSpecialization = targetModel.createSpecialization(sourceSpecialization.name, sourceSpecialization.type);
+            if (debug) {console.log("Set object specialization to: " + targetSpecialization.name);}
+            targetObject.specialization = targetSpecialization.name;
+        }
+
+    }
+}
+
+
+// recursively iterates through all the child objects of a view in the source model and add the elements to 
+// an array "elements" and the relationships to an array "relationships".  These 2 arrays are then used in later
+// functions to create the corresponding elements and relationshps respectively in the target model
+function nestedObjects(object) {
+    $(object).children().not("relationship").each(function(obj) {
+
+        // get the concept from the visual object
+        let concept = obj.concept;
+            
+        // add the concept to the elements array if it hasn't yet been added
+        if (concept && !elements[concept.id]) {
+            elements[concept.id] = concept;
+        }
+ 
+        if ($(obj).children().length>0) {
+            nestedObjects(obj);
+        }
+    });
+
+    $(object).children("relationship").each(function(obj) {
+
+        // get the relationship from the object
+        let relationship = obj.concept;
+
+        if (relationship && !relationships[relationship.id]) {
+            relationships[relationship.id] = relationship;
+        }
+
+    });
+}
+
+
+// this is the first top level function that iterates through the selected folder and sub-folders and views in
+// the source model and creates the corresponding folder, sub-folders and views in the target model
+function processFolder(item, targetParentFolder)
+{
+    let newFolder = null;
+
+    if (item.type == "folder") {
+  
+        if (debug) {console.log("Parent Folder: " + targetParentFolder.name);}
+        
+        // Create new child folder in target model
+        console.log("Create Folder: " + item.name);
+        newFolder = targetParentFolder.createFolder(item.name);
+        newFolder.documentation = item.documentation;
+
+        if (item.labelExpression) {
+            newFolder.labelExpression = item.labelExpression;
+        }
+        
+        copyProperties(item, newFolder);
+        folderMapping[item.id] = newFolder;
+
+    }
+
+    $(item).children().each(function(child){
+        // if the child is a folder, call the function recursively until a view is found
+        if(child.type == "folder")
+        {
+            processFolder(child, newFolder);
+
+        }
+
+        // found a view
+        if(child.type == "archimate-diagram-model")
+        {
+            console.log("Create View: " + child.name);
+            
+            // Create new view in target model
+            let newView = targetModel.createArchimateView(child.name, newFolder);
+            viewMapping[child.id] = newView;
+            newView.documentation = child.documentation;
+            newView.viewpoint = child.viewpoint.name;
+            try {
+                // only supported from jArchi 1.11
+                newView.connectionRouter = child.connectionRouter;
+            } catch (error) {
+            }
+            copyProperties(child, newView);
+
+            nestedObjects(child);
+        }
+
+    
+    });
+}
+
+
+// this function iterates through the previously collected elements in the source model and
+// creates the corresponding elements in the target model
+function createElements() {
+    
+    let numItems = Object.keys(elements).length;
+    console.log("Create " + numItems + " Elements in the Target Model");
+    let progress = new Progress(numItems, 20);
+
+    Object.entries(elements).forEach(elementObj => {
+        // get the concept
+        let e = elementObj[1];
+
+        let name = e.name;
+        let type = e.type;
+        let documentation =e.documentation;
+        let specializationName = e.specialization;
+        let junctionType = e.junctionType;
+
+        // "diagram-model-group" and "diagram-model-note" are visual objects and only created in a later step
+        // in the target model
+        if (type !== "diagram-model-group" && type !== "diagram-model-note") {
+            if (debug) {console.log("Create Element: " + name + " ; Type: " + type);}
+
+            // create the element in the target model
+            let newElement = targetModel.createElement(type, name);
+            newElement.documentation = documentation;
+
+            // if element is a junction
+            if (junctionType) {
+                newElement.junctionType = junctionType;
+            }
+
+            // check if a specialization should be set for the element and create/set it
+            copySpecialization(e, newElement);
+
+            // set properties
+            copyProperties(e, newElement);
+  
+
+            // create a map between the concept id in the source model and the new element object in the target model to use for further processing
+            elementMapping[e.id] = newElement;
+        }
+
+        progress.showProgress();
+
+    });
+
+}
+
+
+// this function takes a relationship object in source model as input and
+// creates the corresponding relationship in the target model
+function createRelationship(rel) {
+
+    let relID = rel.id;
+
+    let name = rel.name;
+    let type = rel.type;
+    
+    let source = elementMapping[rel.source.id];
+    if (source === undefined) {
+        source = relationshipMapping[rel.source.id];
+        if (source === undefined) {
+            console.log("*** Relationship source for relationship " + rel + " not found");
+            return;
+        }
+    }
+    
+    let target = elementMapping[rel.target.id];
+    if (target === undefined) {
+        target = relationshipMapping[rel.target.id];
+        if (target === undefined) {
+            console.log("*** Relationship target for relationship " + rel + " not found");
+            return;
+        }
+    }
+
+    let documentation = rel.documentation;
+    let specializationName = rel.specialization;
+
+    if (debug) {console.log("Create Relationship: " + name + " ; Type: " + type + " ; Source: " + source.name + " ; Target: " + target.name);}
+
+    // create the relationship in the target model
+    try {
+
+        let newRelationship = targetModel.createRelationship(type, name, source, target);
+
+        // create a map between the concept id in the source model and the new relationship object in the target
+        // model to use for further processing
+        relationshipMapping[relID] = newRelationship;
+
+        newRelationship.documentation = documentation;
+
+        // set specialization
+        copySpecialization(rel, newRelationship);
+
+        // set properties
+        copyProperties(rel, newRelationship);
+
+        if (rel.accessType) {
+            newRelationship.accessType = rel.accessType;
+        }
+
+        if (rel.associationDirected) {
+            newRelationship.associationDirected = rel.associationDirected;
+        }
+
+        if (rel.influenceStrength) {
+            newRelationship.influenceStrength = rel.influenceStrength;
+        }
+
+    } catch (err) {
+        let message = "!!! Couldn't create relationship " + name + " of type " + type;
+        if (source) message += " with source " + source;
+        if (target) message += " with target " + target;
+        console.log(message);
+        console.log(err.message);
+
+    }
+}
+
+
+// this function iterates through the previously collected relationships in the source model and
+// creates the corresponding relationships in the target model
+function createRelationships() {
+
+    let edges = [];
+    let unorderedRelationships = [];
+
+    // create 2 arrays, one with relationships that don't have a source or target pointing to a
+    // relationship i.e. elements only and the other array of edges for relationhips that do have a source
+    // or target pointing to a relationship.  The latter is used to sort these relationships
+    // topologically to ensure relationships are created in the right order ito dependencies
+    Object.entries(relationships).forEach(relObj => {
+
+        let obj = relObj[1];
+        let relSource = obj.source;
+        let relTarget = obj.target;
+
+        if (relSource.type.includes("relationship")) {
+
+            if (debug) console.log("*** Relationship with source that is a relationship");
+            edges.push([relSource.id, obj.id]);
+
+        } else if (relTarget.type.includes("relationship")) {
+
+            if (debug) console.log("*** Relationship with target that is a relationship:");
+            edges.push([relTarget.id, obj.id]);
+
+        } else {
+
+            unorderedRelationships.push(relObj[0]);
+
+        }
+        
+    });
+
+    // topological sort
+    let ts = tsort(edges);
+
+    let orderedRelationships = new Set(unorderedRelationships);
+
+    // add the 2 arrays above together in a single ordered Set
+    for (j = 0; j < ts.length; j++) {
+        orderedRelationships.add(ts[j]);
+    }
+
+    let numItems = orderedRelationships.size;
+    console.log("Create " + numItems + " Relationships in the Target Model");
+    let progress = new Progress(numItems, 20);
+
+    // iterate through the ordered relationhips and create them
+    for (let id of orderedRelationships) {
+        let rel = relationships[id];
+        if (rel) createRelationship(rel);
+
+        progress.showProgress();
+
+    }
+
+}
+
+
+// this function copies various visual properties from a diagram object in the source model
+// to a diagram object in the target model
+function copyVisualObjectProperties(sourceObject, targetObject) {
+    targetObject.name = sourceObject.name;
+    targetObject.figureType = sourceObject.figureType;
+    targetObject.showIcon = sourceObject.showIcon;
+    targetObject.fontName = sourceObject.fontName;
+    targetObject.fontSize = sourceObject.fontSize;
+    targetObject.fontStyle = sourceObject.fontStyle;
+    targetObject.fontColor = sourceObject.fontColor;
+    targetObject.textAlignment = sourceObject.textAlignment;
+    targetObject.textPosition = sourceObject.textPosition;
+    targetObject.fillColor = sourceObject.fillColor;
+    targetObject.opacity = sourceObject.opacity;
+    targetObject.outlineOpacity = sourceObject.outlineOpacity;
+    targetObject.gradient = sourceObject.gradient;
+    targetObject.lineColor = sourceObject.lineColor;
+    targetObject.imagePosition = sourceObject.imagePosition;
+    targetObject.imageSource = sourceObject.imageSource;
+
+    try {
+        // only supported from jArchi 1.5
+        targetObject.iconColor = sourceObject.iconColor;
+        // only supported from jArchi 1.6
+        targetObject.lineWidth = sourceObject.lineWidth;
+        targetObject.deriveLineColor = sourceObject.deriveLineColor;
+        // only supported from jArchi 1.7
+        targetObject.index = sourceObject.index;
+        // only supported from jArchi 1.8
+        targetObject.lineStyle = sourceObject.lineStyle;
+    } catch (err) {
+    }
+
+    if (sourceObject.labelExpression) {
+        targetObject.labelExpression = sourceObject.labelExpression;
+    }
+
+    let image = sourceObject.image;
+    // save the image path of the custom image into the customImages map
+    if (image) {
+        if (debug) {console.log("Source Object Image: " + image);}
+        let imagePath = image.get("path");
+        customImages[imagePath] = null;
+        objectToImage.set(targetObject, imagePath);
+    }
+
+}
+
+
+// this function copies various visual properties from a diagram connection in the source model
+// to a diagram connection in the target model
+function copyVisualConnectionProperties(sourceConnection, targetConnection) {
+    targetConnection.labelVisible = sourceConnection.labelVisible;
+    targetConnection.lineWidth = sourceConnection.lineWidth;
+    targetConnection.textAlignment = sourceConnection.textAlignment;
+    targetConnection.textPosition = sourceConnection.textPosition;
+
+}
+
+
+// this function creates a corresponding diagram object in the target model from a diagram
+// object in the source model
+function createDiagramObjectNested(sourceObject, targetObject) {
+  
+    try {
+        let type = sourceObject.type;
+        let x = sourceObject.bounds.x;
+        let y = sourceObject.bounds.y;
+        let width = sourceObject.bounds.width;
+        let height = sourceObject.bounds.height;
+        let newVisualObject = null;
+        if (debug) {console.log("Diagram Object: " + sourceObject.name + " ; Type: " + type);}
+
+        switch (type) {
+            case "diagram-model-group":
+            case "group":
+                newVisualObject = targetObject.createObject(type, x, y, width, height);
+                newVisualObject.name = sourceObject.name;
+                diagramObjectsMapping[sourceObject.id] = newVisualObject;
+                copyVisualObjectProperties(sourceObject, newVisualObject);
+                newVisualObject.borderType = sourceObject.borderType;
+
+                $(sourceObject).children().not("relationship").each(function(child){
+
+                    createDiagramObjectNested(child, newVisualObject);
+
+                });
+                break;
+
+            case "diagram-model-note":
+            case "note":
+                newVisualObject = targetObject.createObject(type, x, y, width, height);
+                newVisualObject.name = sourceObject.name;
+                diagramObjectsMapping[sourceObject.id] = newVisualObject;
+                copyVisualObjectProperties(sourceObject, newVisualObject);
+                newVisualObject.borderType = sourceObject.borderType;
+                newVisualObject.setText(sourceObject.text);
+                break;
+
+            case "archimate-diagram-model":
+                let targetView = viewMapping[sourceObject.refView.id];
+                let viewRef = targetObject.createViewReference(targetView, x, y, width, height);
+                diagramObjectsMapping[sourceObject.id] = viewRef;
+                break;
+            
+            default:
+                let sourceConcept = sourceObject.concept;
+                let targetConcept = elementMapping[sourceConcept.id];
+                newVisualObject = targetObject.add(targetConcept, x, y, width, height);
+                diagramObjectsMapping[sourceObject.id] = newVisualObject;
+                copyVisualObjectProperties(sourceObject, newVisualObject);
+
+                $(sourceObject).children().not("relationship").each(function(child){
+
+                    createDiagramObjectNested(child, newVisualObject);
+
+                });
+        }
+    } catch (err) {
+        console.log("!!! Couldn't create Diagram Object for " + sourceObject + " for concept " + sourceObject.concept);
+        console.log(err.message);
+    }
+
+}
+
+
+// this function iterates through the previously collected views in the source model and creates
+// the corresponding diagram objects (excluding relationships) in the target model
+function createDiagramObjects()
+{
+    let numItems = Object.keys(viewMapping).length;
+    console.log("Iterate through " + numItems + " Views in the Target Model and add Diagram Objects");
+    let progress = new Progress(numItems, 20);
+
+    Object.entries(viewMapping).forEach(mapObj => {
+        let sourceView = $("#" + mapObj[0]).first();
+        let targetView = mapObj[1];
+        if (debug) {console.log("Source View: " + sourceView.name + " ; Target View: " + targetView.name);}
+        $(sourceView).children().not("relationship").not("diagram-model-connection").each(function(child){
+
+            createDiagramObjectNested(child, targetView);
+    
+        });
+
+        progress.showProgress();
+    });
+}
+
+
+// this function creates a corresponding diagram relationship in the target model from a diagram
+// relationship in the source model
+function createDiagramConnection(sourceConnection, targetView) {
+
+    try {
+
+        let relSourceDiagramObject = diagramObjectsMapping[sourceConnection.source.id];
+        let relTargetDiagramObject = diagramObjectsMapping[sourceConnection.target.id];
+        let sourceConnectionType = sourceConnection.type;
+        let newDiagramConnection = null;
+
+        if (sourceConnectionType === "diagram-model-connection") {
+            newDiagramConnection = targetView.createConnection(relSourceDiagramObject, relTargetDiagramObject);         
+        } else {
+
+            let sourceConcept = sourceConnection.concept;
+            let targetConcept = relationshipMapping[sourceConcept.id];
+
+            if (targetConcept === undefined) {
+                let message = "!!! Couldn't create Diagram Connection for " + sourceConnection;
+                if (relSourceDiagramObject) message += " from " + relSourceDiagramObject;
+                if (relTargetDiagramObject) message += " to " + relTargetDiagramObject;
+                console.log(message);
+                return;
+            }
+
+            if (debug) console.log("targetConcept: " + targetConcept + " ; sourceDiagramObject: " + relSourceDiagramObject + " ; targetDiagramObject: " + relTargetDiagramObject);
+            newDiagramConnection = targetView.add(targetConcept, relSourceDiagramObject, relTargetDiagramObject);
+
+        }
+
+        // add new relationship to diagramObjectsMapping so that relationships still to be created, which might
+        // connect to a relationship as source or target, will find a visual object
+        diagramObjectsMapping[sourceConnection.id] = newDiagramConnection;
+        copyVisualObjectProperties(sourceConnection, newDiagramConnection);
+        copyVisualConnectionProperties(sourceConnection, newDiagramConnection);
+
+        for (j = 0; j < sourceConnection.relativeBendpoints.length; j++) {
+            let bp = sourceConnection.relativeBendpoints[j];
+            if (debug) console.log("bp; " + bp + " j: " + j);
+            newDiagramConnection.addRelativeBendpoint(bp, j);
+        }
+        
+    } catch (err) {
+        console.log("\n" + err.message);
+    }
+
+}
+
+
+// this function iterates through the previously collected views in the source model and creates
+// the corresponding diagram relationships in the target model
+function createDiagramConnections() {
+
+    let numItems = Object.keys(viewMapping).length;
+    console.log("Iterate through " + numItems + " Views in the Target Model and add Diagram Connections");
+    let progress = new Progress(numItems, 20);
+
+    Object.entries(viewMapping).forEach(mapObj => {
+        let sourceView = $("#" + mapObj[0]).first();
+        let targetView = mapObj[1];
+        if (debug) {console.log("\nSource View: " + sourceView.name + " ; Target View: " + targetView.name);}
+
+        let edges = [];
+        let unorderedConnections = [];
+        let diagramConnections = [];
+
+        $(sourceView).children("relationship").add($(sourceView).children("diagram-model-connection")).each(function(child){
+
+            diagramConnections[child.id] = child;
+            let connectionSource = child.source;
+            let connectionTarget = child.target;
+
+            if (connectionTypes.has(connectionSource.type) || connectionTypes.has(connectionTarget.type)) {
+
+                if (connectionTypes.has(connectionSource.type)) {
+                    if (debug) console.log("*** Diagram Connection with source that is a Diagram Connection");
+                    edges.push([connectionSource.id, child.id]);
+                }
+
+                if (connectionTypes.has(connectionTarget.type)) {
+                    if (debug) console.log("*** Diagram Connection with target that is a Diagram Connection");
+                    edges.push([connectionTarget.id, child.id]);
+                }
+
+            } else {
+
+                unorderedConnections.push(child.id);
+
+            }
+ 
+        });
+
+          // topological sort
+        let ts = tsort(edges);
+
+        let orderedConnections = new Set(unorderedConnections);
+
+        // add the 2 arrays above together in a single ordered Set
+        for (j = 0; j < ts.length; j++) {
+            orderedConnections.add(ts[j]);
+        }
+
+        // iterate through the ordered Diagram Connections and create them in the target model
+        for (let id of orderedConnections) {
+            let sourceModelConnection = diagramConnections[id];
+            if (sourceModelConnection) createDiagramConnection(sourceModelConnection, targetView);
+
+        }
+
+        progress.showProgress();
+
+    });
+
+}
+
+
+// this function iterates through the previously collected custom images in the source model, saves them to a
+// a temporary folder and then adds them to the target model
+function copyCustomImages() {
+    let sourceModelPath = sourceModel.getPath();
+
+    try {
+        let sourceFile = null;
+
+        // check if the source model is an archive file
+        let isArchiveFile = false;
+        try {
+            sourceFile = new ZipFile(sourceModelPath);
+            if (sourceFile.getEntry("model.xml") != null) {
+                isArchiveFile = true;
+            }
+        } catch (error) {
+        }
+
+        console.log("\n*** Source Model is " + (isArchiveFile ? "an archive" : "not an archive") + " file");
+
+        let imageDirectory = new File(__DIR__ + "/images");
+        let directoryCreated = false;
+
+        // create an images directory in the working directory to temporarily store the images from the
+        // source model
+        if (!imageDirectory.exists()) {
+            imageDirectory.mkdir();
+            directoryCreated = true;
+        }
+
+        let numItems = Object.keys(customImages).length;
+        console.log("Add " + numItems + " Custom Images to the Target Model");
+        let progress = new Progress(numItems, 20);
+
+        // extract the images from the source model zip file and save it to the images directory, upload
+        // it to the target model and delete the images from the images directory
+        Object.entries(customImages).forEach(mapObj => {
+            let imagePath = mapObj[0];
+            if (debug) console.log("Model Source Image Path: " + imagePath);
+
+            if (isArchiveFile) {
+                let zipEntry = sourceFile.getEntry(imagePath);
+                if (zipEntry)  {
+                    let inputStream = sourceFile.getInputStream(zipEntry);
+                    let outputFile = new File(__DIR__ + "/" + imagePath);
+                    if (debug) console.log("Disk Target Image File: " + outputFile.getPath());
+
+                    outputFile.createNewFile();
+                    let outputStream = new FileOutputStream(outputFile);
+                    inputStream.transferTo(outputStream);
+
+                    inputStream.close();
+                    outputStream.close();
+
+                    customImages[imagePath] = targetModel.createImage(outputFile.getPath());
+
+                    outputFile.delete();
+    
+                }
+            } else {
+                let inputPath = Paths.get(sourceModelPath.substring(0, sourceModelPath.lastIndexOf("/") + 1) + imagePath);
+                if (debug) console.log("Disk Source Image Path: " + inputPath);
+
+                if (Files.notExists(inputPath)) {
+                    console.log("Source Image File does not exist: " + inputPath);
+                } else {
+
+                    let outputPath = Paths.get(__DIR__ + "/" + imagePath);
+                    if (debug) console.log("Disk Target Image Path: " + outputPath);
+
+                    Files.copy(inputPath, outputPath);
+                    if (debug) console.log("Copied Image to: " + outputPath);
+
+                    customImages[imagePath] = targetModel.createImage(outputPath.toString());
+
+                    outputPath.toFile().delete();
+                }
+            }
+
+            progress.showProgress();
+
+        });
+
+        if (sourceFile) sourceFile.close();
+
+        // delete the images directory if it was created in this script
+        if (directoryCreated) {
+            imageDirectory.delete();
+        }
+
+        // Iterate through the diagram objects and set the image field of the relevant diagram objects
+        numItems = objectToImage.size;
+        console.log("Iterate through " + numItems + " Diagram Objects in the Target Model and set Custom Image property");
+        progress = new Progress(numItems, 20);
+
+        objectToImage.forEach((value, key) => {
+            let targetDiagramObject = key;
+            
+            let sourceImagePath = value;
+            let targetImage = customImages[sourceImagePath];
+
+            if (targetImage) {
+                targetDiagramObject.image = targetImage;
+            }
+            progress.showProgress();
+
+        });
+
+        // Iterate through the specializations in the target model and set the image to the relevant image
+        // in the target model
+        console.log("Add Custom Images to Specializations in the Target Model");
+        targetModel.specializations.forEach(specialization => {
+
+            if (debug) console.log("Specialization: " + specialization.name + " ; " + specialization.type);
+            
+            let sourceSpecialization = sourceModel.findSpecialization(specialization.name, specialization.type);
+            let sourceImage = sourceSpecialization.image;
+            if (sourceImage) {
+                let imagePath = sourceImage.get("path");
+                let targetImage = customImages[imagePath];
+                specialization.image = targetImage;
+            }
+ 
+        });
+
+    }
+    catch (err) {
+        console.log("*** " + err.message);
+        return;
+    }
+
+}
+
+
+// this is the main script
+console.show();
+console.clear();
+
+console.log("> Export start");
+
+if ($(selection).filter("folder").size() == 1) {
+    let selectedFolder = $(selection).filter("folder").first();
+
+    if (!isValidSelection(selectedFolder)) {
+        window.alert("Not a valid selection.  Please select a Folder containing the Views before running the script. Only one folder should be selected");
+    } else {
+
+        console.log("Selected Folder: " + selectedFolder.name);
+
+        sourceModel = selectedFolder.model;
+        console.log("Source Model: " + sourceModel.name);
+
+        var targetModelName = window.prompt("Please enter Export Model Name:", selectedFolder.name);
+        console.log("Target Model Name: ", targetModelName);
+
+        targetModel = $.model.create(targetModelName);
+        console.log("Create Target Model: " + targetModel.name);
+
+        targetModel.documentation = selectedFolder.documentation;
+        targetModel.setAsCurrent();
+        let parentFolder = $("folder.Views").first();
+        sourceModel.setAsCurrent();
+
+        console.log("Create Folders and Views in Target Model")
+        processFolder(selectedFolder, parentFolder);
+        
+        //Create Elements in Target Model
+        createElements();
+        
+        //Create Relationships in Target Model
+        createRelationships();
+        
+        // Create Diagram Objects in Target Model
+        createDiagramObjects();
+        
+        // Create Diagram Connections in Target Model
+        createDiagramConnections();
+        
+        // Add custom images to target model
+        copyCustomImages();
+
+        let targetModelFileName = CleanFileName(selectedFolder.name) + ".archimate";
+        targetModelFileName = window.promptSaveFile({ title: "Export Archi Model Filename", filterExtensions: [ "*.archimate" ], fileName: targetModelFileName } );
+
+
+        console.log("Saving Target Model Filename: " + targetModelFileName);
+        targetModel.save(targetModelFileName);
+
+        console.log("> Export done");
+    }
+
+}
+else
+{
+    window.alert("No Folder selected.  Please select a Folder containing the Views before running the script. Only one folder should be selected");
+    console.log("> Please select a Folder containing the Views. Only one Folder should be selected");
+};

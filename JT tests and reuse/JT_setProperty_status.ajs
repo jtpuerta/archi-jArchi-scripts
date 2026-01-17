@@ -1,5 +1,5 @@
 // set status properties
-// new, comming soon, problem, to suppress
+// new, comming soon, problem, to suppress, removed
 
 console.show();
 console.clear();
@@ -7,10 +7,10 @@ console.log("> Start");
 
 // window.alert("FillColor of the selected elements = " + $(selection).attr("fillColor"));
 
-//  new(green), comming soon (pink), problem(red), to rework (orange), to suppress(grey)
+//  new(green), comming soon (pink), problem(red), to rework (orange), to suppress(grey), removed (black grey)
 
 var statusValue = window.promptSelection("Which value do you want to set for status prop. (or set empty) ?",
-								["new","coming soon","problem","to rework","to suppress",""]);
+								["new","coming soon","problem","to rework","to suppress","removed", ""]);
 if (statusValue) {
 	$(selection).prop("status", statusValue);
 	}else {
@@ -40,7 +40,8 @@ function getColorValue(theValue){
     if(theValue == "coming soon")   return "#ff00ff";  // pink
     if(theValue == "problem")       return "#ff8080";  // red
     if(theValue == "to rework")     return "#ffA500";  // orange
-    if(theValue == "to suppress")   return "#c0c0c0";  // grey
+    if(theValue == "to suppress")   return "#E7E7E7";  // grey
+    if(theValue == "removed")       return "#B9B9B9";  // black grey
 	// si c'est une autre valeur que celles ci-dessus, alors on ne change pas la couleur éventuellement présente (?)
 }
 

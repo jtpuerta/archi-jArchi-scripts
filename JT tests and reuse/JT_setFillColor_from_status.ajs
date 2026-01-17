@@ -73,7 +73,8 @@ function getColorValue(theValue){
     if(theValue == "coming soon")   return "#ff00ff";  // pink
     if(theValue == "problem")       return "#ff8080";  // red
     if(theValue == "to rework")     return "#ffA500";  // orange
-    if(theValue == "to suppress")   return "#c0c0c0";  // grey
+    if(theValue == "to suppress")   return "#E7E7E7";  // grey
+    if(theValue == "removed")       return "#B9B9B9";  // black grey
     // si c'est une autre valeur que celles ci-dessus, alors on ne change pas la couleur éventuellement présente (?)
 }
 

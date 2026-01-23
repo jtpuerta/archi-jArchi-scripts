@@ -15,7 +15,7 @@ console.show();
 theConceptVOs = $("view").find("element");
 theConceptVOs.each( c => {
     c.gradient = GRADIENT.TOP;
-    c.textPosition = TEXT_POSITION.CENTER;
+    //c.textPosition = TEXT_POSITION.CENTER;  // NON, car selon les cas (inclusions) il faut Top ou Center
     //c.fontSize = 9;
     //c.fontName = "Segoe UI";
 });

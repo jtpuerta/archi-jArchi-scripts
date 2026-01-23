@@ -1,0 +1,78 @@
+debug = true;
+console.show();
+console.clear();
+console.log("> Start - Mise à jour des labels");
+
+/**
+ * Définit le label selon le type et la spécialisation
+ */
+function getLabelFormat(type, spec) {
+    // Nettoyage des entrées
+    var t = type ? type.toLowerCase() : "";
+    var s = spec ? spec : "";
+
+    // --- TEST DES COMBINAISONS ---
+    
+    // Cas 1 : Processus métier avec spécialisation "Validation"
+    if (t === "business-process" && s === "Validation") {
+        return "✅ ${name} (Validé)";
+    }
+
+    // Cas 2 : Composant applicatif critique
+    if (t === "application-component" && s === "Critique") {
+        return "⚠️ [APP] ${name}";
+    }
+
+    // Cas par défaut selon le type technique
+    switch(t) {
+        case "business-object":
+            return "👤 <<${specialization}>> \n ${name}";
+        case "data-object":
+            return "💾 ${name}";
+        case "application-service":
+            return "⚙️ Svc: ${name}";
+        default:
+            // Format standard si rien ne correspond
+            return s !== "" ? "<<${specialization}>> \n ${name}" : "${name}";
+    }
+}
+
+// --- Logique d'exécution ---
+
+// 1. On capture la sélection brute
+var rawSelection = selection; 
+debug ? console.log("Objets bruts détectés : " + rawSelection.length) : true;
+
+// 2. Tentative de récupération des objets de diagramme
+// On essaie de convertir la sélection en collection Archi (plus robuste)
+var visualObjects = $(selection).filter("diagram-model-reference");
+debug ? console.log("Objets visuels détectés : " + visualObjects.length) : true;
+
+// 3. SI VIDE : On tente de chercher les représentations des concepts sélectionnés dans l'arbre
+if (visualObjects.size() === 0) {
+    visualObjects = $(selection).find("diagram-model-reference");
+}
+
+// JTP: je tente
+visualObjects = rawSelection;
+
+if (visualObjects.size() === 0) {
+    console.log("!! Erreur : Sélectionnez des formes dans une vue Archi.");
+} else {
+    visualObjects.each(function(o) {
+        if (o.concept) {
+            try {
+                // On récupère le format via notre fonction
+                var expression = getLabelFormat(o.concept.type, o.concept.specialization);
+                
+                // On applique l'expression dynamique
+                o.labelExpression = expression;
+                
+                debug ? console.log("Mis à jour : " + o.name) : true;
+            } catch (e) {
+                console.log("Impossible d'appliquer le label sur " + o.name + " : " + e.message);
+            }
+        }
+    });
+    console.log("> Opération terminée sur " + visualObjects.size() + " objet(s).");
+}

@@ -1,0 +1,95 @@
+﻿/*
+ * Create the views for an Application Service
+ * + Create a Viewref toward the AppSrv map
+ */
+
+debug = true;
+
+console.show();
+console.clear();
+console.log("> Start");
+
+// variables
+var theConceptVO;
+var theConcept;
+var theView;
+var theViewDetail;
+var theViewUsage;
+
+// la selection doit se faire sur un VO, dans une Vue
+theConceptVO = $(selection).filter("application-service").first();
+
+// theConceptVO doit être un application-service / dans une vue 
+if(!theConceptVO) {
+    console.log("!! one Application Service must be selected in the current view")
+    exit();
+}
+theView = theConceptVO.view;
+if(!theView) {
+    console.log("!! one Application Service must be selected in the current view")
+    exit();
+}
+debug ? console.log("theConceptVO = " + theConceptVO.name) : true;
+debug ? console.log("theView = " + theView.name) : true;
+
+// si la view n'existe pas déja, alors création
+theViewDetail = $("view").filter( v => {
+    return v.name == theConceptVO.name ? true : false;
+}).first();
+debug ? console.log("theViewDetail = " + theViewDetail) : true;
+
+theConcept = theConceptVO.concept;
+
+if(theViewDetail){
+    console.log("> The view already exists");
+}else{
+    console.log("> The view does not exist");
+
+    // Création de la view  ViewDetail 
+    theViewDetail = model.createArchimateView("Default",$("folder.Views").first());
+    theViewDetail.name = theConcept.name;
+    debug ? console.log("the view is created") : true;
+
+    // Ajout du viewRef vers "TdM"
+    var theTocView = $(".TdM").filter("archimate-diagram-model").first() ;
+    var theTocViewRef1 = theViewDetail.createViewReference(theTocView, 10, 10, 70, 25);
+     debug ? console.log("theTocViewRef are created") :  true;
+
+    // Ajout du viewRef vers "Map des Application Services"
+    var theMapView = $(".Map des Application Services").filter("archimate-diagram-model").first() ;
+    if(!theMapView) {
+        console.log("!! 'Map des Application Services'  does not exist")
+        exit();
+    } else {
+        debug ? console.log("theMapView = " + theMapView.name) : true;
+    }
+    var theMapViewRef1 = theViewDetail.createViewReference(theMapView, 90, 10, 210, 25);
+     debug ? console.log("theMapViewRef is created") :  true;
+
+    // Ajout de la note de Titre
+    var theNoteDetail = theViewDetail.createObject("diagram-model-note", 310, 10, 600, 25)
+    theNoteDetail.fontStyle = "bold";
+    theNoteDetail.setLabelExpression("$vfolder{name} / $view{name}");
+    debug ? console.log("theNote is created") :  true;
+}
+
+// Ajout d'un ViewRef sur theConceptVO (si il n'y en a pas déja un)
+if($(theConceptVO).children("diagram-model-reference").size()==0){
+    console.log("> theConceptVOViewRef has to be created ");
+
+    if(!theViewDetail){
+        // si theViewDetail n'est pas défini, c'est qu'il existe déja (TODO refactor ?)
+        theViewDetail = $(view).filter(v=>{return v.name == theConcept.name }).first();
+        debug ? console.log("theViewDetail qui existe déja = " + theViewDetail) : true;
+        debug ? console.log("theViewDetail qui existe déja (parent) = " + $(theViewDetail).parent().first().name) : true;
+    }
+
+    // création of theConceptVOViewRef : systématiquement vers Détail
+    var theConceptVOViewRef = theConceptVO.createViewReference(theViewDetail, 0, 0, 25, 25); 
+}
+else{
+    console.log("> theConceptVOViewRef already exists");
+    debug ? console.log("- " + $(theConceptVO).children("diagram-model-reference").first()) : true;
+
+}
+console.log("> End");

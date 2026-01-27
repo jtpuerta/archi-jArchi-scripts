@@ -14,12 +14,17 @@ console.show();
 
 theConceptVOs = $("view").find("element");
 theConceptVOs.each( c => {
-    c.gradient = GRADIENT.TOP;
-    //c.textPosition = TEXT_POSITION.CENTER;  // NON, car selon les cas (inclusions) il faut Top ou Center
+    c.gradient = GRADIENT.TOP;          // D'abord pour tous les VO, puis on remet NON pour les ViewRef
+    c.textPosition = TEXT_POSITION.TOP;  
     //c.fontSize = 9;
     //c.fontName = "Segoe UI";
 });
 
+theConceptVRVOs = $("view").find("diagram-model-reference");  // selection des référence de View (ie les Bouttons)
+theConceptVRVOs.each( c => {
+    c.gradient = GRADIENT.NONE;
+})
+    
 theViewRefs = $("view").find("diagram-model-reference");
 theViewRefs.each( v => {
     v.fontColor = "#0000ff";    // bleu vif

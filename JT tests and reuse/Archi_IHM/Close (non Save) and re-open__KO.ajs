@@ -1,0 +1,21 @@
+﻿/*
+ * New Archi Script
+ */
+console.show();
+console.clear();
+console.log("Start");
+
+var filePath = model.getPath(); // Récupère le chemin du fichier actuel
+console.log("Model Path = " +  filePath);
+
+if(filePath) {
+    // 1. Fermer le modèle actuel (false = ne pas sauvegarder)
+    model.openInUI();
+    
+    // 2. Réouvrir le fichier
+    //var reloadedModel = jArchi.load(filePath);
+    
+    console.log("Modèle rechargé depuis : " + filePath);
+} else {
+    console.log("Erreur : Le modèle n'a pas encore été enregistré sur le disque.");
+}

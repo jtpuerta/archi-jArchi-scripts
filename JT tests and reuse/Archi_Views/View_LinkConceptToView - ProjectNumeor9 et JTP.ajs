@@ -9,7 +9,8 @@
 // - create a .createViewReference() positioned in the upperleft corner of the view with the same name, point to the view holding the selected concept
 // Quite useful to describe process and subprocesses, and especially with the HTML export
 //
-// No nesting for the time being; follow [Extend .createViewReference with 'autoNest' optional boolean parameter · Issue #81 · archimatetool/archi-scripting-plugin](https://github.com/archimatetool/archi-scripting-plugin/issues/81)
+// No nesting for the time being; follow [Extend .createViewReference with 'autoNest' optional boolean parameter · 
+// Issue #81 · archimatetool/archi-scripting-plugin](https://github.com/archimatetool/archi-scripting-plugin/issues/81)
 //
 // Roadmap:
 // - currently the script should not be run multiple times for the same concept: it will create multiple .createViewReference(), stacked
@@ -45,6 +46,8 @@ listVO.each(function(theConceptVO) {
         if($(theConceptVO).children("diagram-model-reference").size() != 0){
             console.log("!! viewref already exists : bounds = " 
                      + $("#" + theConceptVO.id).children("diagram-model-reference").first().bounds);
+
+            console.log("Verif Properties of" + $(theConceptVO).prop("MainViewId", targetView.id));
             exit();
         }
 

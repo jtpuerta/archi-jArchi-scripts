@@ -1,6 +1,9 @@
 /**
  * Classe FolderSystem
  * Permet de gérer une structure arborescente de dossiers avec navigation par chemins.
+ * 
+ * issue des conseil deGemini pour manipuler une arborescence de Folders
+ * => voir Exemples d'utilisation en fin de script
  */
 class FolderSystem {
   constructor(nomRacine = "root") {

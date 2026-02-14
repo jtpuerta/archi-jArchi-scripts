@@ -96,7 +96,9 @@ theFolderStruct_Niv2_SousAdministration = [
 // ou
 // theFolderStruct = theFolderStruct_Niv2_SousAdministration
 // ou
-theFolderStruct = theFolderStructITILV4Practices
+//theFolderStruct = theFolderStructITILV4Practices
+// ou
+theFolderStruct = theFolderStructITILV4Practices_GG;
 
 // Identification de la Selction
 // .filter().first() is to make sure we work on only one Folder
@@ -104,13 +106,14 @@ theFolderStruct = theFolderStructITILV4Practices
 var fold = $(selection).filter('folder').first(); 
 console.log('Here is the Selected Folder: ', fold.name, " Id: ", fold.id);
 
+myCreation(theFolderStructITILV4Practices_GG);
 
-function myCreation(){
+function myCreation(foldStruc){
     for(i = 0; i < theFolderStruct.length; i++ ){
         debug ? console.log("- " + theFolderStruct[i]) : true;
     }
     // Si c juste pour vérifier activer le Exit() ci-dessous
-    // exit();
+    //exit();
 
     for(i = 0; i < theFolderStruct.length; i++ ){
         theFolderRoot.createFolder(theFolderStruct[i]);

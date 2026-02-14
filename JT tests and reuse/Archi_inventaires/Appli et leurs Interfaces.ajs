@@ -1,0 +1,42 @@
+/**
+ * @file Rapport d'inventaire applicatif
+ * @author Votre Nom
+ */
+
+console.clear();
+console.log("--- Début de l'inventaire ---");
+
+/** * On récupère tous les composants applicatifs du modèle
+ * @type {Selector} 
+ */
+const toutesLesApps = $("application-component");
+
+if (toutesLesApps.size() === 0) {
+    console.log("Aucun composant applicatif trouvé dans le modèle.");
+} else {
+    toutesLesApps.each(function(app) {
+        /** @type {ArchimateElement} */
+        const currentApp = app;
+
+        // Récupération d'une propriété personnalisée
+        const criticite = currentApp.prop("Criticité") || "Non définie";
+
+        console.log("\nApplication : " + currentApp.name);
+        console.log(" > Criticité : " + criticite);
+
+        // Navigation : Trouver les interfaces liées via des relations
+        /** @type {Selector} */
+        const interfaces = $(currentApp).outRels("composition-relationship").target().filter("application-interface");
+
+        if (interfaces.size() > 0) {
+            console.log(" > Interfaces exposées :");
+            interfaces.each(function(inter) {
+                console.log("   - " + inter.name);
+            });
+        } else {
+            console.log(" > Aucune interface documentée.");
+        }
+    });
+}
+
+console.log("\n--- Fin de l'inventaire ---");

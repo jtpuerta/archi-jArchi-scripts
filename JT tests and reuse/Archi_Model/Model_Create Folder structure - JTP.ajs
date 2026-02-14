@@ -20,6 +20,11 @@ var theFolderStructArchimate;
 var theFolderStructITILV4Practices;
 
 theFolderStructITILV4Practices = [
+"Gestion des Services IT",
+"Gestion Générale IT",
+"Gestion Technique de l'IT"
+]
+theFolderStructITILV4Practices_GS = [
 "Analyse métier",
 "Bureau des services",
 "Conception des services",
@@ -36,8 +41,9 @@ theFolderStructITILV4Practices = [
 "Gestion du catalogue de services",
 "Gestion du niveau des services",
 "Suivi et gestion des événements",
-"Validation et test des services",
-//
+"Validation et test des services"
+]
+theFolderStructITILV4Practices_GG = [
 "Amélioration continue",
 "Gestion de l'architecture",
 "Gestion de la main d'oeuvre et des talents",
@@ -51,14 +57,16 @@ theFolderStructITILV4Practices = [
 "Gestion des risques",
 "Gestion du changement organisationnel",
 "Gestion financière des services",
-"Mesures et rapports",
-//
+"Mesures et rapports"
+]
+theFolderStructITILV4Practices_GT = [
 "Gestion de l'Infrastructure et des Plateformes",
 "Gestion du déploiement",
 "Gestion du dév. et des logiciels"
 ];
 
-theFolderStructArchimate = [
+
+theFolderStruct_Niv1_SousMAMP = [
     "Administration",
     "Alimentation et Agriculture",
     "Aménagement",
@@ -72,16 +80,44 @@ theFolderStructArchimate = [
     "Mobilité"
 ];
 
-theFolderStruct = theFolderStructArchimate
+theFolderStruct_Niv2_SousAdministration = [
+    "Business Data",
+    "Business Intelligence",
+    "Communication",
+    "Géomatique",
+    "Gestion de Patrimoine",
+    "Gestion Financière",
+    "Gestion IT",
+    "Gestion RH",
+    "Intelligence Artificielle"
+]
 
-for(i = 0; i < theFolderStruct.length; i++ ){
-    debug ? console.log("- " + theFolderStruct[i]) : true;
-}
+// theFolderStruct = theFolderStruct_Niv1_SousMAMP
+// ou
+// theFolderStruct = theFolderStruct_Niv2_SousAdministration
+// ou
+theFolderStruct = theFolderStructITILV4Practices
+
+// Identification de la Selction
+// .filter().first() is to make sure we work on only one Folder
+// (in case of multiple or erroneous selection)
+var fold = $(selection).filter('folder').first(); 
+console.log('Here is the Selected Folder: ', fold.name, " Id: ", fold.id);
 
 
-for(i = 0; i < theFolderStruct.length; i++ ){
-    theFolderRoot.createFolder(theFolderStruct[i]);
-    //model.createElement("capability",theFolderStruct[i]);
+function myCreation(){
+    for(i = 0; i < theFolderStruct.length; i++ ){
+        debug ? console.log("- " + theFolderStruct[i]) : true;
+    }
+    // Si c juste pour vérifier activer le Exit() ci-dessous
+    // exit();
+
+    for(i = 0; i < theFolderStruct.length; i++ ){
+        theFolderRoot.createFolder(theFolderStruct[i]);
+        
+        // A utiliser avec la Structure ITIL uniquement ?
+        //model.createElement("capability",theFolderStruct[i]);
+    }
 }
 
 console.log("> End");

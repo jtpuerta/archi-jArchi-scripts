@@ -2,4 +2,10 @@
  * New Archi Script
  */
  
-console.log("New Archi Script");
+console.show();
+console.log("> Start");
+
+// On boucle sur les éléments sélectionnés
+selection.each(function(e) {
+    console.log("Nom : " + e.name + " => " + e.id);
+});

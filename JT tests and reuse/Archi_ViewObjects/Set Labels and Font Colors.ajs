@@ -10,11 +10,7 @@ var CONFIG = {
     },
     specType: {
         SPECX:  { icon: "❖", label: "une Spécialisation est présente" },
-        APPLI:  { icon: "⚙", label: "Appli GLPI (App-Component)" },
-        APP_SERVICE:  { icon: "🔌", label: "Service Applicatif" },
-        BUSINESS_OBJ: { icon: "👤", label: "Objet Métier" },
-        DATA_OBJ:      { icon: "💾", label: "Objet de Données" },
-        VALIDATED:    { icon: "✔", label: "Processus / Validation" }
+        APPLI:  { icon: "⚙", label: "Appli GLPI (App-Component)" }
     },
     colors: {
         LINK_PRESENT: "#0064ff", 
@@ -42,10 +38,6 @@ function getLabelFormat(o, type, spec, hasPureText, hasLink) {
     var prefix = "";
 
     if (t === "application-component" && s === "Appli") prefix = CONFIG.specType.APPLI.icon + " "; 
-    else if (t === "application-service") prefix = CONFIG.specType.APP_SERVICE.icon + " ";
-    else if (t === "business-object") prefix = CONFIG.specType.BUSINESS_OBJ.icon + " ";
-    else if (t === "data-object") prefix = CONFIG.specType.DATA_OBJ.icon + " ";
-    else if (t === "business-process" && s === "Validation") prefix = CONFIG.specType.VALIDATED.icon + " ";
     else prefix = (s !== "" ? CONFIG.specType.SPECX.icon + " " : "");
 
     var suffix = "";

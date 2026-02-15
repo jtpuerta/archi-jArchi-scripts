@@ -98,7 +98,7 @@ theFolderStruct_Niv2_SousAdministration = [
 // ou
 //theFolderStruct = theFolderStructITILV4Practices
 // ou
-theFolderStruct = theFolderStructITILV4Practices_GG;
+theFolderStruct = theFolderStructITILV4Practices_GS;
 
 // Identification de la Selction
 // .filter().first() is to make sure we work on only one Folder

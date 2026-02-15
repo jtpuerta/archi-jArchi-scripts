@@ -1,0 +1,36 @@
+/**
+ * SCRIPT : NETTOYAGE DES NOTES (SUPPRESSION DE ${name})
+ */
+
+var clearCount = 0;
+console.show();
+console.clear();
+console.log("> Start - Nettoyage des LabelExpressions des Notes...");
+
+function cleanNote(o) {
+    // On cible uniquement les Notes ArchiMate
+    if (o.type === "diagram-model-note") {
+        var currentText = o.labelExpression;
+        
+        // Si le texte contient ${name} (avec ou sans espaces autour)
+        if (currentText && currentText.indexOf("${name}") !== -1) {
+            // On remet la Note à vide
+            o.labelExpression = ""; 
+            clearCount++;
+            console.log("   [NETTOYÉ] Note ID: " + o.id);
+        }
+    }
+}
+
+// Parcours de la sélection (Vue ou Dossier)
+$(selection).each(function(item) {
+    if (item.type === "folder") {
+        $(item).find("view").each(function(v) { $(v).find().each(function(o) { cleanNote(o); }); });
+    } else if (item.type && item.type.endsWith("-view")) {
+        $(item).find().each(function(o) { cleanNote(o); });
+    } else {
+        cleanNote(item);
+    }
+});
+
+console.log("\n✅ " + clearCount + " notes ont été remises à zéro.");

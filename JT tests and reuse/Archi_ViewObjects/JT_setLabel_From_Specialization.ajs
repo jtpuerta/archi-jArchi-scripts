@@ -1,78 +1,144 @@
-debug = true;
-console.show();
-console.clear();
-console.log("> Start - Mise à jour des labels");
+/**
+ * =================================================================
+ * 1. CONFIGURATION DES ICONES ET DU STYLE
+ * =================================================================
+ */
+var CONFIG = {
+    docStatus: {
+        DOC:  { icon: "■", label: "Description textuelle présente" },
+        LINK: { icon: "➤", label: "Lien externe présent (Doc ou Propriété URL)" }
+    },
+    specType: {
+        SPECX:  { icon: "❖", label: "une Spécialisation est présente" },
+        APPLI:  { icon: "⚙", label: "Appli GLPI (App-Component)" },
+        APP_SERVICE:  { icon: "🔌", label: "Service Applicatif" },
+        BUSINESS_OBJ: { icon: "👤", label: "Objet Métier" },
+        DATA_OBJ:      { icon: "💾", label: "Objet de Données" },
+        VALIDATED:    { icon: "✔", label: "Processus / Validation" }
+    },
+    colors: {
+        LINK_PRESENT: "#0064ff", 
+        DEFAULT: "#000000"       
+    },
+    font: {
+        NAME: "Segoe UI Symbol"
+    },
+    debug: true
+};
 
 /**
- * Définit le label selon le type et la spécialisation
+ * =================================================================
+ * 2. LOGIQUE DE FORMATAGE DU TEXTE
+ * =================================================================
  */
-function getLabelFormat(type, spec) {
-    // Nettoyage des entrées
+function getLabelFormat(o, type, spec, hasPureText, hasLink) {
+    // Cas spécifique pour les NOTES
+    if (type === "diagram-model-note") {
+        return o.labelExpression; // On retourne le texte actuel tel quel
+    }
+
     var t = type ? type.toLowerCase() : "";
     var s = spec ? spec : "";
+    var prefix = "";
 
-    // --- TEST DES COMBINAISONS ---
+    if (t === "application-component" && s === "Appli") prefix = CONFIG.specType.APPLI.icon + " "; 
+    else if (t === "application-service") prefix = CONFIG.specType.APP_SERVICE.icon + " ";
+    else if (t === "business-object") prefix = CONFIG.specType.BUSINESS_OBJ.icon + " ";
+    else if (t === "data-object") prefix = CONFIG.specType.DATA_OBJ.icon + " ";
+    else if (t === "business-process" && s === "Validation") prefix = CONFIG.specType.VALIDATED.icon + " ";
+    else prefix = (s !== "" ? CONFIG.specType.SPECX.icon + " " : "");
+
+    var suffix = "";
+    if (hasPureText || hasLink) suffix += "  |";
+    if (hasPureText) suffix += " " + CONFIG.docStatus.DOC.icon;
+    if (hasLink)     suffix += " " + CONFIG.docStatus.LINK.icon;
     
-    // Cas 1 : Processus métier avec spécialisation "Validation"
-    if (t === "business-process" && s === "Validation") {
-        return "✅ ${name} (Validé)";
-    }
-
-    // Cas 2 : Composant applicatif critique
-    if (t === "application-component" && s === "Critique") {
-        return "⚠️ [APP] ${name}";
-    }
-
-    // Cas par défaut selon le type technique
-    switch(t) {
-        case "business-object":
-            return "👤 <<${specialization}>> \n ${name}";
-        case "data-object":
-            return "💾 ${name}";
-        case "application-service":
-            return "⚙️ Svc: ${name}";
-        default:
-            // Format standard si rien ne correspond
-            return s !== "" ? "<<${specialization}>> \n ${name}" : "${name}";
-    }
+    return prefix + "${name}" + suffix;
 }
 
-// --- Logique d'exécution ---
+/**
+ * =================================================================
+ * 3. LOGIQUE D'APPLICATION DES STYLES
+ * =================================================================
+ */
+function applyStyle(object, hasLink) {
+    try {
+        var currentStyle = object.fontStyle; 
+        if (!currentStyle) currentStyle = "normal";
 
-// 1. On capture la sélection brute
-var rawSelection = selection; 
-debug ? console.log("Objets bruts détectés : " + rawSelection.length) : true;
+        var isBold = (currentStyle.indexOf("bold") !== -1);
+        var isItalic = (currentStyle.indexOf("italic") !== -1);
 
-// 2. Tentative de récupération des objets de diagramme
-// On essaie de convertir la sélection en collection Archi (plus robuste)
-var visualObjects = $(selection).filter("diagram-model-reference");
-debug ? console.log("Objets visuels détectés : " + visualObjects.length) : true;
+        var newBaseStyle = "normal";
+        if (isBold && isItalic) newBaseStyle = "bolditalic";
+        else if (isBold) newBaseStyle = "bold";
+        else if (isItalic) newBaseStyle = "italic";
 
-// 3. SI VIDE : On tente de chercher les représentations des concepts sélectionnés dans l'arbre
-if (visualObjects.size() === 0) {
-    visualObjects = $(selection).find("diagram-model-reference");
+        object.fontStyle = newBaseStyle;
+        object.fontColor = hasLink ? CONFIG.colors.LINK_PRESENT : CONFIG.colors.DEFAULT;
+        object.fontName = CONFIG.font.NAME;
+    } catch(e) { }
 }
 
-// JTP: je tente
-visualObjects = rawSelection;
+/**
+ * =================================================================
+ * 4. EXECUTION
+ * =================================================================
+ */
+var modifiedCount = 0; 
+console.show();
+console.clear();
+console.log("> Start - Mise à jour globale (Protection des Notes)");
 
-if (visualObjects.size() === 0) {
-    console.log("!! Erreur : Sélectionnez des formes dans une vue Archi.");
-} else {
-    visualObjects.each(function(o) {
-        if (o.concept) {
-            try {
-                // On récupère le format via notre fonction
-                var expression = getLabelFormat(o.concept.type, o.concept.specialization);
-                
-                // On applique l'expression dynamique
-                o.labelExpression = expression;
-                
-                debug ? console.log("Mis à jour : " + o.name) : true;
-            } catch (e) {
-                console.log("Impossible d'appliquer le label sur " + o.name + " : " + e.message);
-            }
+function processObject(o) {
+    // Si l'objet n'a pas de Label Expression (ex: une Vue), on traite les références
+    if (o.labelExpression === undefined) {
+        var concept = o.concept ? o.concept : (o.type && o.type.indexOf("view") == -1 ? o : null);
+        if (concept && concept.type) {
+            $(concept).viewRefs().each(function(vRef) { processObject(vRef); });
         }
-    });
-    console.log("> Opération terminée sur " + visualObjects.size() + " objet(s).");
+        return; 
+    }
+
+    var concept = o.concept ? o.concept : o; // Pour une Note, le concept c'est l'objet lui-même
+    if (concept && concept.type) {
+        try {
+            var docText = concept.documentation ? concept.documentation.trim() : "";
+            var propURL = concept.prop("URL") ? concept.prop("URL").trim() : "";
+            var fullAnalysisText = docText + " " + propURL;
+
+            var urlRegex = /https?:\/\/[^\s]+/gi;
+            var hasLink = urlRegex.test(fullAnalysisText);
+            var pureTextOnly = docText.replace(urlRegex, "").trim();
+            var hasPureText = (pureTextOnly.length > 0);
+            
+            // On passe l'objet complet à getLabelFormat pour gérer le texte des notes
+            var expression = getLabelFormat(o, concept.type, concept.specialization, hasPureText, hasLink);
+            
+            applyStyle(o, hasLink);
+            
+            // On ne met à jour que si l'expression change (et on ignore si expression est nulle/undefined)
+            if (expression !== undefined && o.labelExpression !== expression) {
+                o.labelExpression = expression;
+                modifiedCount++;
+            }
+        } catch (e) {
+            if(CONFIG.debug) console.log(" ! Erreur sur " + o.name + ": " + e.message);
+        }
+    }
 }
+
+$(selection).each(function(item) {
+    if (item.type === "folder") {
+        $(item).find().each(function(o) { processObject(o); });
+    } else if (item.type && item.type.endsWith("-view")) {
+        $(item).find().each(function(o) { processObject(o); });
+    } else {
+        processObject(item);
+    }
+});
+
+console.log("\n✅ " + modifiedCount + " modifications effectuées.");
+console.log("\n--- LÉGENDE ---");
+for (var key in CONFIG.docStatus) console.log(CONFIG.docStatus[key].icon + " : " + CONFIG.docStatus[key].label);
+for (var key in CONFIG.specType) console.log(CONFIG.specType[key].icon + " : " + CONFIG.specType[key].label);
